@@ -1,0 +1,36 @@
+# DocForge Production Caddy Configuration
+{
+    admin off
+}
+
+{$APP_DOMAIN::80} {
+    encode zstd gzip
+
+    # S3 Storage Proxy (for self-hosted / dry-run presigned URL uploads & downloads)
+    @storage path /storage/* /docforge-*
+    handle @storage {
+        uri strip_prefix /storage
+        reverse_proxy storage:9000 {
+            header_up Host storage:9000
+        }
+    }
+
+    # API & Health Routes -> Backend
+    @backend path /api/* /health*
+    handle @backend {
+        reverse_proxy backend:8000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # All Web Routes & Static Assets -> Next.js Frontend
+    handle {
+        reverse_proxy frontend:3000 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+}

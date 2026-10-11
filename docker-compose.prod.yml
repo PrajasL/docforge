@@ -1,0 +1,315 @@
+name: docforge-prod
+
+services:
+  # ===================================================================
+  # Reverse Proxy & Edge Layer (HTTPS, Compression, Header Security)
+  # ===================================================================
+  proxy:
+    image: caddy:2-alpine
+    container_name: docforge-prod-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - APP_DOMAIN=${APP_DOMAIN:-:80}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge-net
+      - internal-net
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+
+  # ===================================================================
+  # Next.js Frontend (Multi-stage Standalone, Non-root)
+  # ===================================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: docforge-prod-frontend
+    restart: unless-stopped
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-/api/v1}
+      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-https://docforge.com}
+    networks:
+      - edge-net
+      - internal-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1024M
+        reservations:
+          memory: 256M
+
+  # ===================================================================
+  # FastAPI Backend (Multi-stage Python, Non-root)
+  # ===================================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: docforge-prod-backend
+    restart: unless-stopped
+    expose:
+      - "8000"
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - POSTGRES_SERVER=postgres
+      - REDIS_URL=redis://redis:6379/0
+      - CLAMAV_HOST=clamav
+      - CLAMAV_PORT=3310
+    networks:
+      - internal-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+        reservations:
+          memory: 512M
+
+  # ===================================================================
+  # Celery Asynchronous Processing Worker
+  # ===================================================================
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: docforge-prod-worker
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app.celery_app worker --loglevel=info --concurrency=4
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - POSTGRES_SERVER=postgres
+      - REDIS_URL=redis://redis:6379/0
+      - CLAMAV_HOST=clamav
+      - CLAMAV_PORT=3310
+    networks:
+      - internal-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.workers.celery_app.celery_app inspect ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 4096M
+        reservations:
+          memory: 1024M
+
+  # ===================================================================
+  # Celery Beat Periodic Scheduler (Job Cleanup & Maintenance)
+  # ===================================================================
+  beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: docforge-prod-beat
+    restart: unless-stopped
+    command: celery -A app.workers.celery_app.celery_app beat --loglevel=info -s /tmp/celerybeat-schedule
+    healthcheck:
+      disable: true
+    env_file:
+      - ${ENV_FILE:-.env.production}
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+      - REDIS_URL=redis://redis:6379/0
+    networks:
+      - internal-net
+    depends_on:
+      redis:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  # ===================================================================
+  # Database Layer (PostgreSQL 16 - No External Host Port)
+  # ===================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: docforge-prod-postgres
+    restart: unless-stopped
+    expose:
+      - "5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-docforge_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Database password required}
+      POSTGRES_DB: ${POSTGRES_DB:-docforge_prod}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docforge_app} -d ${POSTGRES_DB:-docforge_prod}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+        reservations:
+          memory: 512M
+
+  # ===================================================================
+  # Cache & Broker Layer (Redis 7 - No External Host Port)
+  # ===================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: docforge-prod-redis
+    restart: unless-stopped
+    expose:
+      - "6379"
+    command: redis-server --save 60 1 --loglevel warning --maxmemory 768mb --maxmemory-policy volatile-lru
+    volumes:
+      - redis_prod_data:/data
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1024M
+        reservations:
+          memory: 256M
+
+  # ===================================================================
+  # Antivirus Scanner (ClamAV - No External Host Port)
+  # ===================================================================
+  clamav:
+    image: clamav/clamav:latest
+    container_name: docforge-prod-clamav
+    restart: unless-stopped
+    expose:
+      - "3310"
+    environment:
+      CLAMAV_NO_FRESHCLAM: "false"
+    volumes:
+      - clamav_prod_data:/var/lib/clamav
+    networks:
+      - internal-net
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 127.0.0.1:3310 || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+        reservations:
+          memory: 1024M
+
+  # ===================================================================
+  # S3-Compatible Object Storage (MinIO - Self-hosted / Local Dry-Run)
+  # When deploying with Cloudflare R2 or AWS S3, set STORAGE_PROVIDER=r2/s3.
+  # ===================================================================
+  storage:
+    image: cgr.dev/chainguard/minio:latest
+    container_name: docforge-prod-storage
+    restart: unless-stopped
+    command: server /data
+    expose:
+      - "9000"
+    environment:
+      MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-docforge_storage_admin}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-docforge_storage_secret_12345}
+    volumes:
+      - storage_prod_data:/data
+    networks:
+      - internal-net
+      - edge-net
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+networks:
+  edge-net:
+    driver: bridge
+  internal-net:
+    driver: bridge
+    internal: true
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+  clamav_prod_data:
+  storage_prod_data:
+  caddy_data:
+  caddy_config:
