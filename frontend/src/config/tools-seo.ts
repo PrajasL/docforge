@@ -39,9 +39,9 @@ export const DEFAULT_PRODUCTION_SITE_URL = "https://docforge.com";
 /**
  * Returns the configured canonical site URL for metadata, sitemap, and robots.txt.
  * Priority:
- * 1. NEXT_PUBLIC_SITE_URL environment variable
+ * 1. NEXT_PUBLIC_SITE_URL environment variable (explicit production domain)
  * 2. Vercel deployment URL (if available)
- * 3. Default production domain (https://docforge.com)
+ * 3. Default fallback domain (https://docforge.com)
  */
 export const getSiteUrl = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
@@ -57,13 +57,22 @@ export const getSiteUrl = (): string => {
     const globalContext = globalThis as unknown as { __docforge_site_url_warned?: boolean };
     if (!globalContext.__docforge_site_url_warned) {
       console.warn(
-        `[DocForge SEO Notice] NEXT_PUBLIC_SITE_URL is not set. Defaulting to ${DEFAULT_PRODUCTION_SITE_URL}. Set NEXT_PUBLIC_SITE_URL in production environment variables for your canonical domain.`
+        `[DocForge SEO Notice] NEXT_PUBLIC_SITE_URL is not configured. Defaulting to fallback ${DEFAULT_PRODUCTION_SITE_URL}. Configure NEXT_PUBLIC_SITE_URL in production environment variables for your verified canonical domain.`
       );
       globalContext.__docforge_site_url_warned = true;
     }
   }
 
   return DEFAULT_PRODUCTION_SITE_URL;
+};
+
+/**
+ * Returns true if an explicit canonical site URL has been configured
+ * via the NEXT_PUBLIC_SITE_URL environment variable.
+ */
+export const hasConfiguredSiteUrl = (): boolean => {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  return Boolean(envUrl && envUrl.trim().length > 0);
 };
 
 export const TOOLS_SEO_DATA: Record<string, ToolSeoData> = {
@@ -1197,7 +1206,7 @@ export const HOMEPAGE_FAQS: FaqItem[] = [
   {
     question: "How long are my files kept on the server?",
     answer:
-      "Uploaded and processed files are stored temporarily and automatically purged from storage within 60 minutes by our scheduled background cleanup service.",
+      "Uploaded and processed files are stored temporarily with a 2-hour retention window (7,200 seconds TTL). Scheduled cleanup workers sweep every 15 minutes to permanently delete expired files.",
   },
   {
     question: "Are my documents shared with third parties or used for AI training?",

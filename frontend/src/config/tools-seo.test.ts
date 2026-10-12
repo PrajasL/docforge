@@ -4,6 +4,7 @@ import {
   getToolSeoData,
   getToolMetadata,
   getSiteUrl,
+  hasConfiguredSiteUrl,
   generateToolJsonLd,
   generateHomepageJsonLd,
   HOMEPAGE_FAQS,
@@ -109,13 +110,16 @@ describe("Part 18 — SEO Architecture & Tool Landing Page Metadata", () => {
   });
 
   it("configures site URL safely without localhost in canonical metadata", () => {
+    expect(hasConfiguredSiteUrl()).toBe(false);
     expect(getSiteUrl()).toBe("https://docforge.com");
 
     process.env.NEXT_PUBLIC_SITE_URL = "https://pdf.example.org";
+    expect(hasConfiguredSiteUrl()).toBe(true);
     expect(getSiteUrl()).toBe("https://pdf.example.org");
 
     // Clean trailing slash
     process.env.NEXT_PUBLIC_SITE_URL = "https://pdf.example.org/";
+    expect(hasConfiguredSiteUrl()).toBe(true);
     expect(getSiteUrl()).toBe("https://pdf.example.org");
   });
 
@@ -276,5 +280,10 @@ describe("Part 18 — SEO Architecture & Tool Landing Page Metadata", () => {
 
     expect(faq).toBeDefined();
     expect(faq?.mainEntity).toHaveLength(HOMEPAGE_FAQS.length);
+
+    const retentionFaq = HOMEPAGE_FAQS.find((f) => f.question.includes("How long"));
+    expect(retentionFaq).toBeDefined();
+    expect(retentionFaq?.answer).toContain("2-hour retention window");
+    expect(retentionFaq?.answer).toContain("7,200 seconds TTL");
   });
 });

@@ -150,7 +150,7 @@ export default function PrivacyPolicyPage() {
                 <strong>Temporary Storage:</strong> Uploaded input files and processed output files are temporarily stored in encrypted S3-compatible object storage (e.g., Cloudflare R2 or MinIO) using date-partitioned storage keys.
               </li>
               <li>
-                <strong>Automated Deletion:</strong> An automated background scheduler (Celery Beat) runs periodic cleanup sweeps every few minutes. Any job record, input file, and output file older than <strong>two (2) hours</strong> is permanently and irreversibly purged from object storage and database tables.
+                <strong>Automated Deletion:</strong> An automated background scheduler (Celery Beat) runs periodic cleanup sweeps every 15 minutes. Any job record, input file, and output file older than <strong>two (2) hours</strong> is permanently and irreversibly purged from object storage and database tables.
               </li>
               <li>
                 <strong>Zero Long-Term Archives:</strong> DocForge does not maintain backup archives or long-term snapshots of user-uploaded files. Once deleted, files cannot be recovered by either you or DocForge operators.
@@ -161,20 +161,20 @@ export default function PrivacyPolicyPage() {
           {/* Section 4 */}
           <section className="space-y-4">
             <h2 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-800 pb-2">
-              4. Antivirus and Malware Scanning
+              4. File Validation, Antivirus and Malware Scanning
             </h2>
             <p>
-              To protect our users and infrastructure against malware distribution:
+              To protect our users and infrastructure against unauthorized uploads and malicious content:
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li>
-                All document uploads are streamed over TCP directly through an asynchronous ClamAV antivirus engine (via standard INSTREAM protocol).
+                <strong>Default Validation:</strong> All uploaded files undergo strict MIME-type inspection, binary magic-byte verification, and document format checks before processing begins.
               </li>
               <li>
-                If a malicious payload or standard test signature (such as EICAR) is detected, the file confirmation is rejected with HTTP 400 <code>MALWARE_DETECTED</code>, and the uploaded binary is immediately purged from storage.
+                <strong>Optional ClamAV Integration:</strong> In deployments where ClamAV antivirus scanning is enabled by the operator, files are streamed over TCP directly through an asynchronous ClamAV daemon (via standard INSTREAM protocol).
               </li>
               <li>
-                DocForge operates with fail-closed security: if the antivirus scanner daemon is unavailable in production, uploads are refused rather than allowed to execute unscanned.
+                <strong>Threat Response:</strong> If a malicious payload, suspicious signature, or corrupt structure is detected, the file is rejected with an HTTP 400 error and immediately purged from storage.
               </li>
             </ul>
           </section>

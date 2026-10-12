@@ -31,13 +31,13 @@ describe("DocForge Production Homepage (UI & SEO)", () => {
     expect(screen.getByRole("link", { name: /most popular: merge pdf/i })).toHaveAttribute("href", "/merge");
   });
 
-  it("renders trust highlights (privacy, auto-cleanup, free, lossless)", () => {
+  it("renders trust highlights (privacy, auto-cleanup, free, fidelity)", () => {
     renderWithProviders(<Home />);
 
     expect(screen.getByText("100% Private Sandbox")).toBeInTheDocument();
-    expect(screen.getByText("60-Min Auto Cleanup")).toBeInTheDocument();
+    expect(screen.getByText("2-Hour Auto-Purge")).toBeInTheDocument();
     expect(screen.getByText("Browser-Grade & Free")).toBeInTheDocument();
-    expect(screen.getByText("Lossless Formatting")).toBeInTheDocument();
+    expect(screen.getByText("High Document Fidelity")).toBeInTheDocument();
   });
 
   it("renders all 13 operational PDF tools with crawlable links and descriptions", () => {
@@ -96,7 +96,7 @@ describe("DocForge Production Homepage (UI & SEO)", () => {
     expect(screen.getByRole("heading", { name: /how docforge works/i, level: 2 })).toBeInTheDocument();
     expect(screen.getByText("Select & Configure")).toBeInTheDocument();
     expect(screen.getByText("Isolated Processing")).toBeInTheDocument();
-    expect(screen.getByText("Instant Download & Purge")).toBeInTheDocument();
+    expect(screen.getByText("Instant Download & Auto-Purge")).toBeInTheDocument();
   });
 
   it("renders 'Privacy & Security by Design' section with factual guarantees", () => {
@@ -106,7 +106,7 @@ describe("DocForge Production Homepage (UI & SEO)", () => {
     expect(screen.getByText("Automated Lifecycle Purge")).toBeInTheDocument();
     expect(screen.getByText("Zero Third-Party Cloud Leaks")).toBeInTheDocument();
     expect(screen.getByText("No AI Model Training")).toBeInTheDocument();
-    expect(screen.getByText("Antivirus & MIME Inspection")).toBeInTheDocument();
+    expect(screen.getByText("MIME & Magic-Byte Inspection")).toBeInTheDocument();
   });
 
   it("renders Frequently Asked Questions matching the FAQ data", () => {

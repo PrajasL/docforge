@@ -61,8 +61,8 @@ export default function Home() {
     },
     {
       icon: Clock,
-      title: "60-Min Auto Cleanup",
-      desc: "Uploaded and processed files are permanently purged from server storage within 60 minutes.",
+      title: "2-Hour Auto-Purge",
+      desc: "Uploaded and processed files are automatically purged by scheduled cleanup sweeps after a 2-hour retention window.",
     },
     {
       icon: Zap,
@@ -71,8 +71,8 @@ export default function Home() {
     },
     {
       icon: FileCheck2,
-      title: "Lossless Formatting",
-      desc: "High-fidelity PDF processing preserving vector geometry, text clarity, and embedded fonts.",
+      title: "High Document Fidelity",
+      desc: "Structural tools preserve original vector geometry and fonts; compression optimizes file size and image export rasterizes pages.",
     },
   ];
 
@@ -94,16 +94,16 @@ export default function Home() {
     {
       step: "03",
       icon: Download,
-      title: "Instant Download & Purge",
+      title: "Instant Download & Auto-Purge",
       description:
-        "Download your finished document immediately. All temporary files are automatically and permanently deleted from storage within 60 minutes.",
+        "Download your finished document immediately. All temporary files are automatically purged by scheduled cleanup sweeps after a 2-hour retention window.",
     },
   ];
 
   const securityFeatures = [
     {
       title: "Automated Lifecycle Purge",
-      desc: "Background cleanup workers run on a recurring schedule to permanently delete upload and result artifacts within 60 minutes.",
+      desc: "Background cleanup workers sweep every 15 minutes to permanently delete upload and result artifacts once their 2-hour retention expires.",
     },
     {
       title: "Zero Third-Party Cloud Leaks",
@@ -114,8 +114,8 @@ export default function Home() {
       desc: "Your documents are strictly confidential. We never read, index, or use your uploaded text or images to train AI or machine learning models.",
     },
     {
-      title: "Antivirus & MIME Inspection",
-      desc: "Uploads pass thorough validation including MIME type verification, magic-byte inspection, and ClamAV scanning before any processing begins.",
+      title: "MIME & Magic-Byte Inspection",
+      desc: "Uploads undergo strict MIME validation and PDF header/magic-byte checks by default, with optional ClamAV antivirus scanning in supported environments.",
     },
   ];
 
@@ -149,7 +149,7 @@ export default function Home() {
               </h1>
               <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-300 leading-relaxed max-w-3xl mx-auto">
                 Merge, split, compress, rotate, organize, convert, and protect PDF documents right in your browser.
-                Processed securely on our isolated worker pipeline with automatic file deletion within 60 minutes — zero third-party APIs, zero tracking, zero AI training on your documents.
+                Processed securely on our isolated worker pipeline with automatic file deletion after 2 hours — zero third-party APIs, zero tracking, zero AI training on your documents.
               </p>
             </div>
 
@@ -305,7 +305,7 @@ export default function Home() {
               </h2>
               <p className="text-base sm:text-lg text-blue-100/90 leading-relaxed">
                 Most online PDF services upload your files to third-party cloud infrastructure or store data indefinitely.
-                DocForge runs on isolated worker containers and permanently purges all files within 60 minutes.
+                DocForge runs on isolated worker containers and permanently purges all files after a 2-hour retention period via scheduled cleanup sweeps.
               </p>
             </div>
 

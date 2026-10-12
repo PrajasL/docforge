@@ -177,8 +177,9 @@ DocForge provides dedicated liveness and readiness endpoints:
 3. Populate `.env.production` with:
    - A generated secret key: `openssl rand -hex 32`
    - A secure database password
-   - R2 / S3 credentials
+   - R2 / S3 storage credentials
    - Your production domain (`APP_DOMAIN=docforge.yourdomain.com`)
+   - Your canonical public site URL (`NEXT_PUBLIC_SITE_URL=https://docforge.yourdomain.com`) — **Required:** Ensures canonical tags, Open Graph URLs, sitemaps, and robots.txt match your actual verified domain instead of fallback placeholders.
 
 ### 5.2 Build & Launch Containers
 ```bash
