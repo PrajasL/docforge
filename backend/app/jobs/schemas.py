@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -18,15 +19,15 @@ class FileInputRequest(BaseModel):
 
 class JobCreateRequest(BaseModel):
     tool: str = Field(..., min_length=1, max_length=50, description="Tool identifier (e.g., merge, test)")
-    files: List[FileInputRequest] = Field(..., min_length=1, description="List of files to upload")
-    config: Dict[str, Any] = Field(default_factory=dict, description="Tool-specific configuration")
+    files: list[FileInputRequest] = Field(..., min_length=1, description="List of files to upload")
+    config: dict[str, Any] = Field(default_factory=dict, description="Tool-specific configuration")
 
 
 class PresignedUploadItem(BaseModel):
     file_id: str
     upload_url: str
     upload_method: str = "PUT"
-    upload_headers: Dict[str, str] = Field(default_factory=lambda: {"Content-Type": "application/pdf"})
+    upload_headers: dict[str, str] = Field(default_factory=lambda: {"Content-Type": "application/pdf"})
     expires_in: int = 900
 
 
@@ -34,18 +35,18 @@ class JobSummary(BaseModel):
     id: str
     tool: str
     status: str
-    config: Dict[str, Any]
+    config: dict[str, Any]
     expires_at: datetime
     created_at: datetime
 
 
 class JobCreateData(BaseModel):
     job: JobSummary
-    uploads: List[PresignedUploadItem]
+    uploads: list[PresignedUploadItem]
 
 
 class JobStartRequest(BaseModel):
-    config: Optional[Dict[str, Any]] = None
+    config: dict[str, Any] | None = None
 
 
 class JobStartData(BaseModel):
@@ -59,14 +60,14 @@ class JobDetailData(BaseModel):
     tool: str
     status: str
     progress: int
-    config: Dict[str, Any]
-    input_files: List[Dict[str, Any]]
-    result_file: Optional[Dict[str, Any]] = None
-    error_message: Optional[str] = None
-    error_code: Optional[str] = None
-    error_details: Optional[Dict[str, Any]] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    config: dict[str, Any]
+    input_files: list[dict[str, Any]]
+    result_file: dict[str, Any] | None = None
+    error_message: str | None = None
+    error_code: str | None = None
+    error_details: dict[str, Any] | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
     expires_at: datetime
     created_at: datetime
 

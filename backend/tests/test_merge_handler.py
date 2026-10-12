@@ -1,8 +1,9 @@
 import io
 import os
 import tempfile
-import pytest
+
 import pypdf
+import pytest
 
 from app.core.errors import AppException
 from app.tools.base import ProcessingContext

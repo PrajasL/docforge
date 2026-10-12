@@ -1,12 +1,14 @@
 import io
 import os
 import zipfile
+
+import pypdf
 import pytest
 from PIL import Image
-import pypdf
+
 from app.core.errors import AppException
-from app.tools.pdf_to_jpg import PdfToJpgPDFHandler
 from app.tools.base import ProcessingContext
+from app.tools.pdf_to_jpg import PdfToJpgPDFHandler
 
 
 def create_sample_pdf(page_count: int = 3) -> bytes:
@@ -243,7 +245,6 @@ async def test_pdf_to_jpg_oversized_file_rejected(tmp_path, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_pdf_to_jpg_excessive_page_count_default_dpi(tmp_path, monkeypatch):
-    from app.core.config import settings
     # Sensible default limit is 100 pages. Test with 101 lightweight blank pages (~15KB)
     handler = PdfToJpgPDFHandler()
     pdf_bytes = create_sample_pdf(101)
@@ -265,7 +266,6 @@ async def test_pdf_to_jpg_excessive_page_count_default_dpi(tmp_path, monkeypatch
 
 @pytest.mark.asyncio
 async def test_pdf_to_jpg_excessive_page_count_300_dpi(tmp_path, monkeypatch):
-    from app.core.config import settings
     # 300 DPI high resolution limit is 50 pages. Test with 51 lightweight blank pages (~8KB)
     handler = PdfToJpgPDFHandler()
     pdf_bytes = create_sample_pdf(51)
@@ -373,6 +373,7 @@ async def test_pdf_to_jpg_aggregate_output_limit_exceeded(tmp_path, monkeypatch)
 async def test_pdf_to_jpg_cleanup_after_aggregate_limit_reached(tmp_path, monkeypatch):
     """Verifies that when aggregate limit is reached mid-stream, partial output files are removed and directory is clean."""
     import shutil
+
     from app.core.config import settings
 
     temp_work_dir = tmp_path / "work_cleanup_dir"

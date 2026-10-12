@@ -1,16 +1,16 @@
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest.mock import patch
+
 import pytest
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
-from app.main import app
-from app.core.config import settings
 import app.core.database as db_module
+from app.core.config import settings
 from app.core.storage import InMemoryStorageBackend, set_storage_backend
-
+from app.main import app
 
 # Test database engine configured with NullPool to prevent event loop connection reuse conflicts
 test_engine = create_async_engine(
@@ -57,7 +57,7 @@ async def setup_test_environment(monkeypatch):
 def mock_celery_task_delay():
     """Mock Celery delay in unit tests to prevent blocking when Redis is not running."""
     with patch("app.workers.tasks.test_job_task.delay") as mock_delay_test, \
-         patch("app.workers.tasks.process_job_task.delay") as mock_delay_process:
+         patch("app.workers.tasks.process_job_task.delay"):
         yield mock_delay_test
 
 

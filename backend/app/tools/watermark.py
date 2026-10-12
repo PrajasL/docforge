@@ -3,18 +3,19 @@ import io
 import math
 import os
 import re
-from typing import Dict, Any, List, Set, Tuple, Union
+from typing import Any
+
 import pypdf
 from pypdf.errors import PdfReadError, PdfStreamError, PyPdfError
-from reportlab.pdfgen import canvas
 from reportlab.lib import colors
+from reportlab.pdfgen import canvas
 
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 from app.tools.rotate import parse_page_selection
 
 
-def parse_hex_color(hex_str: str) -> Tuple[float, float, float]:
+def parse_hex_color(hex_str: str) -> tuple[float, float, float]:
     """Parses a hex color string (e.g. '#000000', '#FF0000', '666') into RGB float tuple (0.0 to 1.0)."""
     if not hex_str:
         return (0.0, 0.0, 0.0)
@@ -45,7 +46,7 @@ class WatermarkPDFHandler(ToolHandler):
     max_input_files = 1
     accepted_content_types = ["application/pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates watermark configuration."""
         if not config:
             return
@@ -137,7 +138,7 @@ class WatermarkPDFHandler(ToolHandler):
                     message=f"Watermark 'angle' must be between -360 and 360 degrees. Received: {angle_val}.",
                 )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """Executes watermark embedding pipeline."""
         # 1. Validate input file count
         if len(context.input_files) != 1:

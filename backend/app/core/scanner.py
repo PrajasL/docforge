@@ -1,11 +1,11 @@
 import asyncio
 import struct
-from typing import Optional, Dict, Any
 from dataclasses import dataclass
-from app.core.config import settings
-from app.core.logging import logger
-from app.core.errors import AppException
+from typing import Any
 
+from app.core.config import settings
+from app.core.errors import AppException
+from app.core.logging import logger
 
 EICAR_SIGNATURE = b"X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*"
 
@@ -18,9 +18,9 @@ class ScannerException(AppException):
 @dataclass
 class ScanResult:
     is_clean: bool
-    virus_name: Optional[str] = None
+    virus_name: str | None = None
     scanned: bool = True
-    details: Optional[str] = None
+    details: str | None = None
 
 
 class ClamAVScanner:
@@ -31,11 +31,11 @@ class ClamAVScanner:
 
     def __init__(
         self,
-        host: Optional[str] = None,
-        port: Optional[int] = None,
-        timeout: Optional[float] = None,
-        enabled: Optional[bool] = None,
-        fail_closed: Optional[bool] = None,
+        host: str | None = None,
+        port: int | None = None,
+        timeout: float | None = None,
+        enabled: bool | None = None,
+        fail_closed: bool | None = None,
     ):
         self.host = host or settings.CLAMAV_HOST
         self.port = port or settings.CLAMAV_PORT
@@ -193,7 +193,7 @@ class ClamAVScanner:
             except Exception:
                 pass
 
-    async def check_health(self) -> Dict[str, Any]:
+    async def check_health(self) -> dict[str, Any]:
         """Check ClamAV daemon connectivity."""
         if not self.enabled:
             return {
@@ -215,5 +215,5 @@ class ClamAVScanner:
 scanner = ClamAVScanner()
 
 
-async def check_scanner_health() -> Dict[str, Any]:
+async def check_scanner_health() -> dict[str, Any]:
     return await scanner.check_health()

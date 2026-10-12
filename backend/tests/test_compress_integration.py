@@ -5,18 +5,18 @@ import subprocess
 import sys
 import time
 import uuid
-import pytest
-import pikepdf
-from PIL import Image
-from httpx import AsyncClient, ASGITransport
 
-from app.core.config import settings
-from app.core.storage import S3StorageBackend, set_storage_backend
+import pikepdf
+import pytest
+from httpx import ASGITransport, AsyncClient
+from PIL import Image
+
 import app.core.database as db_core
-from app.jobs.models import Job, JobStatus
+from app.core.storage import S3StorageBackend, set_storage_backend
+from app.jobs.models import JobStatus
 from app.jobs.service import JobService
 from app.main import app
-from tests.test_celery_redis_integration import is_redis_available, is_minio_available
+from tests.test_celery_redis_integration import is_minio_available, is_redis_available
 
 
 def create_image_test_pdf(width: int = 1000, height: int = 1000) -> bytes:

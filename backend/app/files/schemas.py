@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -10,9 +10,9 @@ class FileMetadata(BaseModel):
     content_type: str = "application/pdf"
     storage_key: str
     status: str = Field(default="pending")  # pending, uploaded, verified, failed
-    sha256: Optional[str] = None
-    page_count: Optional[int] = None
-    uploaded_at: Optional[datetime] = None
+    sha256: str | None = None
+    page_count: int | None = None
+    uploaded_at: datetime | None = None
 
 
 class PresignedUploadInfo(BaseModel):

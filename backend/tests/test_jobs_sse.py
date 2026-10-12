@@ -1,13 +1,25 @@
 import asyncio
 import json
+import socket
+
 import pytest
 from httpx import AsyncClient
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.redis import publish_job_progress, get_job_progress_channel
-from app.jobs.models import Job, JobStatus
+from app.core.redis import get_job_progress_channel, publish_job_progress
+from app.jobs.models import JobStatus
 from app.jobs.service import JobService
 from tests.conftest import TestAsyncSessionLocal
+
+
+def is_redis_available() -> bool:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        result = s.connect_ex(("localhost", 6379))
+        s.close()
+        return result == 0
+    except Exception:
+        return False
 
 
 @pytest.mark.asyncio
@@ -88,6 +100,7 @@ async def test_sse_failed_job_immediate_close(async_client: AsyncClient):
     assert "Corrupted PDF file" in content
 
 
+@pytest.mark.skipif(not is_redis_available(), reason="Redis is not reachable at localhost:6379")
 @pytest.mark.asyncio
 async def test_sse_streaming_live_redis_updates(async_client: AsyncClient):
     """Ensure active job receives published updates from Redis and terminates upon completion."""
@@ -219,6 +232,7 @@ async def test_sse_race_condition_completed_during_setup(async_client: AsyncClie
     assert "race_output.pdf" in content
 
 
+@pytest.mark.skipif(not is_redis_available(), reason="Redis is not reachable at localhost:6379")
 @pytest.mark.asyncio
 async def test_sse_reconnect_behaviour(async_client: AsyncClient):
     """Ensure a reconnecting client receives up-to-date state cleanly after disconnect."""
@@ -272,6 +286,7 @@ async def test_sse_reconnect_behaviour(async_client: AsyncClient):
     assert "reconnect_output.pdf" in content
 
 
+@pytest.mark.skipif(not is_redis_available(), reason="Redis is not reachable at localhost:6379")
 @pytest.mark.asyncio
 async def test_sse_monotonic_progress_updates(async_client: AsyncClient):
     """Ensure the SSE stream guarantees monotonic progress and never regresses."""
@@ -330,6 +345,7 @@ async def test_sse_monotonic_progress_updates(async_client: AsyncClient):
     assert progress_values[-1] == 100
 
 
+@pytest.mark.skipif(not is_redis_available(), reason="Redis is not reachable at localhost:6379")
 @pytest.mark.asyncio
 async def test_sse_disconnect_cleanup(async_client: AsyncClient):
     """Ensure disconnecting client cleans up its Redis pubsub subscription."""
@@ -365,6 +381,7 @@ async def test_sse_disconnect_cleanup(async_client: AsyncClient):
     await publish_job_progress(job_id, {"job_id": job_id, "status": "completed", "progress": 100})
 
 
+@pytest.mark.skipif(not is_redis_available(), reason="Redis is not reachable at localhost:6379")
 @pytest.mark.asyncio
 async def test_sse_heartbeat_db_fallback_detection(async_client: AsyncClient, monkeypatch):
     """Ensure heartbeat DB check detects completed state even if Redis pubsub message was lost."""

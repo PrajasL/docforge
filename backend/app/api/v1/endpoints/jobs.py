@@ -1,33 +1,31 @@
-import uuid
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional
-from fastapi import APIRouter, Depends, Header, Request, status, UploadFile, File
-from fastapi.responses import StreamingResponse
-import json
 import asyncio
+import json
+import uuid
+from datetime import UTC, datetime
+from typing import Any
+
+from fastapi import APIRouter, Depends, File, Header, Request, UploadFile, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.database import get_db_session, check_database_health, AsyncSessionLocal
-from app.core.redis import check_redis_health, get_redis_client, get_job_progress_channel
-from app.core.storage import check_storage_health, get_storage
-from app.core.errors import get_request_id, AppException
+from app.core.database import AsyncSessionLocal, check_database_health, get_db_session
+from app.core.errors import AppException, get_request_id
 from app.core.logging import logger
+from app.core.redis import check_redis_health, get_job_progress_channel, get_redis_client
+from app.core.storage import check_storage_health
 from app.jobs.models import JobStatus
 from app.jobs.schemas import (
     JobCreateRequest,
-    JobStartRequest,
-    JobCreateData,
-    JobStartData,
     JobDetailData,
-    JobDownloadData,
+    JobStartRequest,
 )
 from app.jobs.service import JobService
 
 router = APIRouter()
 
 
-def get_or_create_session_id(x_session_id: Optional[str] = Header(None)) -> str:
+def get_or_create_session_id(x_session_id: str | None = Header(None)) -> str:
     """Extracts or automatically generates an anonymous UUID session ID."""
     if x_session_id and len(x_session_id.strip()) > 0:
         return x_session_id.strip()
@@ -44,7 +42,7 @@ async def create_job(
     request: Request,
     session: AsyncSession = Depends(get_db_session),
     session_id: str = Depends(get_or_create_session_id),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
@@ -62,7 +60,7 @@ async def create_job(
         "meta": {
             "request_id": get_request_id(request),
             "session_id": session_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -71,7 +69,7 @@ async def create_job(
     "/pipeline-health",
     summary="Check upload and background processing pipeline health",
 )
-async def get_pipeline_health(request: Request) -> Dict[str, Any]:
+async def get_pipeline_health(request: Request) -> dict[str, Any]:
     db_health = await check_database_health()
     redis_health = await check_redis_health()
     storage_health = await check_storage_health()
@@ -94,7 +92,7 @@ async def get_pipeline_health(request: Request) -> Dict[str, Any]:
         },
         "meta": {
             "request_id": get_request_id(request),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -107,8 +105,8 @@ async def get_job_status(
     job_id: str,
     request: Request,
     session: AsyncSession = Depends(get_db_session),
-    session_id: Optional[str] = Header(None, alias="X-Session-Id"),
-) -> Dict[str, Any]:
+    session_id: str | None = Header(None, alias="X-Session-Id"),
+) -> dict[str, Any]:
     job = await JobService.get_job(session=session, job_id=job_id, session_id=session_id)
 
     detail = JobDetailData(
@@ -133,7 +131,7 @@ async def get_job_status(
         "data": {"job": detail.model_dump(mode="json")},
         "meta": {
             "request_id": get_request_id(request),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -146,7 +144,7 @@ async def get_job_progress_stream(
     job_id: str,
     request: Request,
     session: AsyncSession = Depends(get_db_session),
-    session_id: Optional[str] = Header(None, alias="X-Session-Id"),
+    session_id: str | None = Header(None, alias="X-Session-Id"),
 ):
     # Verify job existence and session ownership (raises 404 or 403 before starting stream)
     job = await JobService.get_job(session=session, job_id=job_id, session_id=session_id)
@@ -305,8 +303,8 @@ async def confirm_file_upload(
     file_id: str,
     request: Request,
     session: AsyncSession = Depends(get_db_session),
-    session_id: Optional[str] = Header(None, alias="X-Session-Id"),
-) -> Dict[str, Any]:
+    session_id: str | None = Header(None, alias="X-Session-Id"),
+) -> dict[str, Any]:
     file_meta = await JobService.confirm_file_upload(
         session=session,
         job_id=job_id,
@@ -319,7 +317,7 @@ async def confirm_file_upload(
         "data": {"file": file_meta},
         "meta": {
             "request_id": get_request_id(request),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -336,10 +334,10 @@ async def direct_upload_file(
     job_id: str,
     file_id: str,
     request: Request,
-    file: Optional[UploadFile] = File(None),
+    file: UploadFile | None = File(None),
     session: AsyncSession = Depends(get_db_session),
-    session_id: Optional[str] = Header(None, alias="X-Session-Id"),
-) -> Dict[str, Any]:
+    session_id: str | None = Header(None, alias="X-Session-Id"),
+) -> dict[str, Any]:
     if file:
         content = await file.read()
         filename = file.filename
@@ -368,7 +366,7 @@ async def direct_upload_file(
         "data": {"file": file_meta},
         "meta": {
             "request_id": get_request_id(request),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -380,10 +378,10 @@ async def direct_upload_file(
 async def start_job(
     job_id: str,
     request: Request,
-    payload: Optional[JobStartRequest] = None,
+    payload: JobStartRequest | None = None,
     session: AsyncSession = Depends(get_db_session),
-    session_id: Optional[str] = Header(None, alias="X-Session-Id"),
-) -> Dict[str, Any]:
+    session_id: str | None = Header(None, alias="X-Session-Id"),
+) -> dict[str, Any]:
     result = await JobService.start_job(
         session=session,
         job_id=job_id,
@@ -396,7 +394,7 @@ async def start_job(
         "data": {"job": result.model_dump(mode="json")},
         "meta": {
             "request_id": get_request_id(request),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -409,8 +407,8 @@ async def cancel_job(
     job_id: str,
     request: Request,
     session: AsyncSession = Depends(get_db_session),
-    session_id: Optional[str] = Header(None, alias="X-Session-Id"),
-) -> Dict[str, Any]:
+    session_id: str | None = Header(None, alias="X-Session-Id"),
+) -> dict[str, Any]:
     job = await JobService.cancel_job(
         session=session,
         job_id=job_id,
@@ -427,7 +425,7 @@ async def cancel_job(
         },
         "meta": {
             "request_id": get_request_id(request),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -440,8 +438,8 @@ async def get_download_url(
     job_id: str,
     request: Request,
     session: AsyncSession = Depends(get_db_session),
-    session_id: Optional[str] = Header(None, alias="X-Session-Id"),
-) -> Dict[str, Any]:
+    session_id: str | None = Header(None, alias="X-Session-Id"),
+) -> dict[str, Any]:
     download_info = await JobService.get_job_download(
         session=session,
         job_id=job_id,
@@ -453,6 +451,6 @@ async def get_download_url(
         "data": download_info.model_dump(mode="json"),
         "meta": {
             "request_id": get_request_id(request),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }

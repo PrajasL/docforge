@@ -1,14 +1,13 @@
 import time
 import uuid
-from typing import Optional, List, Tuple
+
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
-from starlette.responses import Response, JSONResponse
+from starlette.responses import JSONResponse, Response
 
 from app.core.config import settings
 from app.core.logging import logger
 from app.core.redis import get_redis_client
-
 
 # Atomic sliding window script executed in Redis
 LUA_SLIDING_WINDOW = """
@@ -37,7 +36,7 @@ end
 """
 
 
-def resolve_client_ip(request: Request, trusted_proxies: Optional[List[str]] = None) -> str:
+def resolve_client_ip(request: Request, trusted_proxies: list[str] | None = None) -> str:
     """
     Safely resolves the client IP address.
     Only trusts X-Forwarded-For if the immediate connection peer is in trusted_proxies.
@@ -72,14 +71,14 @@ class RateLimiter:
     """
 
     def __init__(self):
-        self._script_sha: Optional[str] = None
+        self._script_sha: str | None = None
 
     async def check(
         self,
         key: str,
         limit: int,
         window: int,
-    ) -> Tuple[bool, int, int, int]:
+    ) -> tuple[bool, int, int, int]:
         """
         Executes atomic sliding window check against Redis.
         Returns: (allowed, remaining, retry_after, reset_time)

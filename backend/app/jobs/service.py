@@ -1,47 +1,46 @@
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Optional, List, Dict, Any, Tuple
-from sqlalchemy import select, update
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.logging import logger
 from app.core.errors import AppException
+from app.core.logging import logger
 from app.core.storage import StorageBackend, get_storage
 from app.files.validator import (
     sanitize_filename,
-    validate_file_extension,
-    validate_pdf_magic_bytes,
-    validate_pdf_file,
-    validate_jpg_extension,
-    validate_jpg_magic_bytes,
-    validate_jpg_file,
     scan_file_content,
-    FileValidationError,
+    validate_file_extension,
+    validate_jpg_extension,
+    validate_jpg_file,
+    validate_jpg_magic_bytes,
+    validate_pdf_file,
+    validate_pdf_magic_bytes,
 )
-from app.jobs.models import Job, JobStatus, InvalidJobTransitionError
+from app.jobs.models import Job, JobStatus
 from app.jobs.schemas import (
-    JobCreateRequest,
-    JobStartRequest,
-    PresignedUploadItem,
-    JobSummary,
     JobCreateData,
-    JobStartData,
-    JobDetailData,
+    JobCreateRequest,
     JobDownloadData,
+    JobStartData,
+    JobStartRequest,
+    JobSummary,
+    PresignedUploadItem,
 )
 
 
 def generate_input_storage_key(job_id: str, file_id: str, extension: str = "pdf") -> str:
     """Generates date-partitioned storage key for input files: inputs/YYYY/MM/DD/{job_id}/{file_id}.{ext}"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     ext = extension.lstrip(".")
     return f"inputs/{now.year}/{now.month:02d}/{now.day:02d}/{job_id}/{file_id}.{ext}"
 
 
 def generate_output_storage_key(job_id: str, file_id: str, extension: str = "pdf") -> str:
     """Generates date-partitioned storage key for output files: outputs/YYYY/MM/DD/{job_id}/{file_id}.{ext}"""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     ext = extension.lstrip(".")
     return f"outputs/{now.year}/{now.month:02d}/{now.day:02d}/{job_id}/{file_id}.{ext}"
 
@@ -52,9 +51,9 @@ class JobService:
         session: AsyncSession,
         payload: JobCreateRequest,
         session_id: str,
-        ip_address: Optional[str] = None,
-        user_agent: Optional[str] = None,
-        storage: Optional[StorageBackend] = None,
+        ip_address: str | None = None,
+        user_agent: str | None = None,
+        storage: StorageBackend | None = None,
     ) -> JobCreateData:
         storage_client = storage or get_storage()
 
@@ -119,12 +118,12 @@ class JobService:
             )
 
         # Job TTL
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         expires_at = now + timedelta(seconds=settings.DEFAULT_JOB_TTL_SECONDS)
         job_id = uuid.uuid4()
 
-        input_files_meta: List[Dict[str, Any]] = []
-        upload_items: List[PresignedUploadItem] = []
+        input_files_meta: list[dict[str, Any]] = []
+        upload_items: list[PresignedUploadItem] = []
 
         for f in payload.files:
             file_id = str(uuid.uuid4())
@@ -196,7 +195,7 @@ class JobService:
     async def get_job(
         session: AsyncSession,
         job_id: str,
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
     ) -> Job:
         try:
             job_uuid = uuid.UUID(job_id)
@@ -226,10 +225,10 @@ class JobService:
         job_id: str,
         file_id: str,
         content: bytes,
-        filename: Optional[str] = None,
-        session_id: Optional[str] = None,
-        storage: Optional[StorageBackend] = None,
-    ) -> Dict[str, Any]:
+        filename: str | None = None,
+        session_id: str | None = None,
+        storage: StorageBackend | None = None,
+    ) -> dict[str, Any]:
         """Allows direct binary upload to API server and validates content before storing."""
         job = await JobService.get_job(session, job_id, session_id)
         storage_client = storage or get_storage()
@@ -288,7 +287,7 @@ class JobService:
             await storage_client.upload(key=storage_key, data=content, content_type="application/pdf")
 
         # Update file status and job status
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(UTC).isoformat()
         job.update_input_file(
             file_id,
             {
@@ -312,9 +311,9 @@ class JobService:
         session: AsyncSession,
         job_id: str,
         file_id: str,
-        session_id: Optional[str] = None,
-        storage: Optional[StorageBackend] = None,
-    ) -> Dict[str, Any]:
+        session_id: str | None = None,
+        storage: StorageBackend | None = None,
+    ) -> dict[str, Any]:
         """
         Validates that a presigned upload actually completed in Object Storage,
         inspects the stored file to verify magic bytes, and executes ClamAV malware scanning.
@@ -385,7 +384,7 @@ class JobService:
                 message=f"Could not verify file content: {str(e)}",
             )
 
-        now_iso = datetime.now(timezone.utc).isoformat()
+        now_iso = datetime.now(UTC).isoformat()
         job.update_input_file(
             file_id,
             {
@@ -408,9 +407,9 @@ class JobService:
     async def start_job(
         session: AsyncSession,
         job_id: str,
-        payload: Optional[JobStartRequest] = None,
-        session_id: Optional[str] = None,
-        storage: Optional[StorageBackend] = None,
+        payload: JobStartRequest | None = None,
+        session_id: str | None = None,
+        storage: StorageBackend | None = None,
     ) -> JobStartData:
         job = await JobService.get_job(session, job_id, session_id)
         storage_client = storage or get_storage()
@@ -430,8 +429,8 @@ class JobService:
             )
 
         # Verify all input files are uploaded, exist in storage, and passed security verification
-        unready_files: List[str] = []
-        unverified_files: List[str] = []
+        unready_files: list[str] = []
+        unverified_files: list[str] = []
         for f in job.input_files or []:
             key = f.get("storage_key")
             if not key or not await storage_client.exists(key=key):
@@ -484,8 +483,8 @@ class JobService:
 
         # Enqueue background task
         try:
-            from app.workers.tasks import process_job_task, test_job_task
             from app.tools.registry import TOOL_REGISTRY
+            from app.workers.tasks import process_job_task, test_job_task
 
             if job.tool.lower() in TOOL_REGISTRY:
                 process_job_task.delay(str(job.id))
@@ -504,7 +503,7 @@ class JobService:
     async def cancel_job(
         session: AsyncSession,
         job_id: str,
-        session_id: Optional[str] = None,
+        session_id: str | None = None,
     ) -> Job:
         job = await JobService.get_job(session, job_id, session_id)
         if job.status in (JobStatus.COMPLETED, JobStatus.EXPIRED, JobStatus.CANCELLED):
@@ -532,8 +531,8 @@ class JobService:
     async def get_job_download(
         session: AsyncSession,
         job_id: str,
-        session_id: Optional[str] = None,
-        storage: Optional[StorageBackend] = None,
+        session_id: str | None = None,
+        storage: StorageBackend | None = None,
     ) -> JobDownloadData:
         job = await JobService.get_job(session, job_id, session_id)
         storage_client = storage or get_storage()
@@ -580,11 +579,11 @@ class JobService:
     @staticmethod
     async def cleanup_expired_jobs(
         session: AsyncSession,
-        storage: Optional[StorageBackend] = None,
+        storage: StorageBackend | None = None,
     ) -> int:
         """Finds expired jobs, safely removes their files from storage, and marks them EXPIRED."""
         storage_client = storage or get_storage()
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         stmt = select(Job).where(
             Job.expires_at <= now,
@@ -595,7 +594,7 @@ class JobService:
 
         cleaned_count = 0
         for job in expired_jobs:
-            keys_to_delete: List[str] = []
+            keys_to_delete: list[str] = []
             for f in job.input_files or []:
                 if f.get("storage_key"):
                     keys_to_delete.append(f["storage_key"])

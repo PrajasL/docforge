@@ -1,13 +1,15 @@
-import pytest
 from unittest.mock import patch
+
+import pytest
+
 from app.core.config import settings
 from app.core.errors import AppException
-from app.core.scanner import ClamAVScanner, EICAR_SIGNATURE, ScannerException
-from app.files.validator import sanitize_filename, FileValidationError
-from app.jobs.models import Job, JobStatus
-from app.jobs.schemas import JobCreateRequest, FileInputRequest
-from app.jobs.service import JobService
+from app.core.scanner import EICAR_SIGNATURE, ClamAVScanner, ScannerException
 from app.core.storage import InMemoryStorageBackend
+from app.files.validator import FileValidationError, sanitize_filename
+from app.jobs.models import JobStatus
+from app.jobs.schemas import FileInputRequest, JobCreateRequest
+from app.jobs.service import JobService
 from app.workers.tasks import _async_process_job
 
 

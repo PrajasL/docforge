@@ -1,19 +1,19 @@
 import hashlib
 import io
 import os
-import re
 import zipfile
-from typing import Dict, Any, List, Tuple, Union
+from typing import Any
+
 import pypdf
 from pypdf.errors import PdfReadError, PdfStreamError, PyPdfError
 
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
 def parse_page_ranges(
-    ranges_spec: Union[str, List[str]], total_pages: int
-) -> List[Tuple[str, List[int]]]:
+    ranges_spec: str | list[str], total_pages: int
+) -> list[tuple[str, list[int]]]:
     """
     Parses range specifications into a list of (output_filename, [0-indexed page indices]).
     Examples of ranges_spec:
@@ -21,7 +21,7 @@ def parse_page_ranges(
       - ["1-3", "4-6"]
       - "1, 3, 5-7"
     """
-    raw_parts: List[str] = []
+    raw_parts: list[str] = []
     if isinstance(ranges_spec, str):
         raw_parts = [p.strip() for p in ranges_spec.split(",") if p.strip()]
     elif isinstance(ranges_spec, list):
@@ -38,7 +38,7 @@ def parse_page_ranges(
             message="Please specify at least one valid page range.",
         )
 
-    parsed_groups: List[Tuple[str, List[int]]] = []
+    parsed_groups: list[tuple[str, list[int]]] = []
 
     for part in raw_parts:
         if "-" in part:
@@ -116,7 +116,7 @@ class SplitPDFHandler(ToolHandler):
     max_input_files = 1
     accepted_content_types = ["application/pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates split mode configuration."""
         if not config:
             return
@@ -138,7 +138,7 @@ class SplitPDFHandler(ToolHandler):
                     message="Please specify at least one page range.",
                 )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """Processes and splits the input PDF document."""
         # 1. Validate input file count
         if len(context.input_files) != 1:
@@ -201,7 +201,7 @@ class SplitPDFHandler(ToolHandler):
 
             # 3. Determine split groups based on mode
             mode = context.config.get("mode", "ranges")
-            split_groups: List[Tuple[str, List[int]]] = []
+            split_groups: list[tuple[str, list[int]]] = []
 
             if mode == "every_page":
                 pad_width = max(len(str(total_pages)), 2)

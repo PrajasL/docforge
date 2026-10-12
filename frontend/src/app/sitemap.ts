@@ -33,7 +33,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 
-  // All 12 public tool landing pages
+  // All 13 public tool landing pages
   for (const slug of getAllToolSlugs()) {
     const tool = getToolSeoData(slug);
     if (tool) {

@@ -1,8 +1,8 @@
 import os
-import sys
-import shutil
+
 import pypdf
 from playwright.sync_api import sync_playwright
+
 
 def run_unlock_browser_verification():
     scratch_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch")
@@ -14,7 +14,7 @@ def run_unlock_browser_verification():
     pdf3_path = os.path.join(fixtures_dir, "sample_3page.pdf")
     txt_path = os.path.join(fixtures_dir, "not_a_pdf.txt")
     locked_pdf_path = os.path.join(fixtures_dir, "unlock_test_locked.pdf")
-    corrupt_path = os.path.join(fixtures_dir, "corrupt.pdf")
+    os.path.join(fixtures_dir, "corrupt.pdf")
 
     KNOWN_PASSWORD = "UnlockBrowserTest2026!"
 

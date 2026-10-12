@@ -1,10 +1,12 @@
 import io
 import os
-import pytest
+
 import pypdf
+import pytest
+
 from app.core.errors import AppException
-from app.tools.unlock import UnlockPDFHandler
 from app.tools.base import ProcessingContext
+from app.tools.unlock import UnlockPDFHandler
 
 
 def create_encrypted_pdf(password: str = "Secret123!", num_pages: int = 3, width: float = 400, height: float = 600) -> bytes:

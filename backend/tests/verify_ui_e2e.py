@@ -1,7 +1,8 @@
 import os
-import sys
+
 import pypdf
 from playwright.sync_api import sync_playwright
+
 
 def run_browser_verification():
     scratch_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch")

@@ -1,25 +1,26 @@
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
-from typing import AsyncGenerator, Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.endpoints.health import router as health_router
+from app.api.v1.router import api_router
 from app.core.config import settings
-from app.core.logging import setup_logging, logger
-from app.core.middleware import RequestContextMiddleware
 from app.core.errors import (
     AppException,
     app_exception_handler,
-    validation_exception_handler,
     generic_exception_handler,
     get_request_id,
+    validation_exception_handler,
 )
+from app.core.logging import logger, setup_logging
+from app.core.middleware import RequestContextMiddleware
 from app.core.redis import close_redis_client
 from app.core.storage import storage_backend
-from app.api.v1.router import api_router
-from app.api.v1.endpoints.health import router as health_router
 
 
 @asynccontextmanager
@@ -95,7 +96,7 @@ def create_application() -> FastAPI:
     app.include_router(api_router, prefix=settings.API_V1_PREFIX)
 
     @app.get("/", tags=["root"], summary="API Root")
-    async def root_index(request: Request) -> Dict[str, Any]:
+    async def root_index(request: Request) -> dict[str, Any]:
         return {
             "success": True,
             "data": {
@@ -107,7 +108,7 @@ def create_application() -> FastAPI:
             },
             "meta": {
                 "request_id": get_request_id(request),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         }
 

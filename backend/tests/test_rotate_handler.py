@@ -2,12 +2,13 @@ import io
 import os
 import shutil
 import tempfile
-import pytest
+
 import pypdf
+import pytest
 
 from app.core.errors import AppException
 from app.tools.base import ProcessingContext
-from app.tools.rotate import RotatePDFHandler, parse_page_selection
+from app.tools.rotate import RotatePDFHandler
 
 
 def create_sample_pdf(num_pages: int = 4, width: int = 612, height: int = 792) -> bytes:

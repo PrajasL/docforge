@@ -1,10 +1,12 @@
 import io
 import os
-import pytest
+
 import pypdf
+import pytest
+
 from app.core.errors import AppException
-from app.tools.protect import ProtectPDFHandler
 from app.tools.base import ProcessingContext
+from app.tools.protect import ProtectPDFHandler
 
 
 def create_dummy_pdf(num_pages: int = 3, width: float = 400, height: float = 600) -> bytes:

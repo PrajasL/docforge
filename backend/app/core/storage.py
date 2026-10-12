@@ -1,17 +1,18 @@
 import asyncio
-from datetime import datetime, timezone
-from typing import Protocol, Dict, Any, Optional, List
+from datetime import UTC, datetime
+from typing import Any, Protocol
+
 import aioboto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from app.core.config import settings
-from app.core.logging import logger
 from app.core.errors import AppException
+from app.core.logging import logger
 
 
 class StorageError(AppException):
-    def __init__(self, message: str, details: Optional[List[Dict[str, Any]]] = None) -> None:
+    def __init__(self, message: str, details: list[dict[str, Any]] | None = None) -> None:
         super().__init__(
             status_code=500,
             code="STORAGE_ERROR",
@@ -28,12 +29,12 @@ class StorageBackend(Protocol):
         key: str,
         data: bytes,
         content_type: str = "application/pdf",
-        bucket: Optional[str] = None,
+        bucket: str | None = None,
     ) -> str:
         """Uploads raw bytes to storage and returns the object key."""
         ...
 
-    async def download(self, key: str, bucket: Optional[str] = None) -> bytes:
+    async def download(self, key: str, bucket: str | None = None) -> bytes:
         """Downloads raw bytes of an object from storage."""
         ...
 
@@ -42,7 +43,7 @@ class StorageBackend(Protocol):
         key: str,
         expires_in: int = 900,
         content_type: str = "application/pdf",
-        bucket: Optional[str] = None,
+        bucket: str | None = None,
     ) -> str:
         """Generates a short-lived presigned URL for direct client PUT upload."""
         ...
@@ -51,31 +52,31 @@ class StorageBackend(Protocol):
         self,
         key: str,
         expires_in: int = 300,
-        filename: Optional[str] = None,
-        bucket: Optional[str] = None,
+        filename: str | None = None,
+        bucket: str | None = None,
     ) -> str:
         """Generates a short-lived presigned URL for client GET download."""
         ...
 
-    async def delete(self, key: str, bucket: Optional[str] = None) -> None:
+    async def delete(self, key: str, bucket: str | None = None) -> None:
         """Deletes an object from storage. Idempotent (does not raise if missing)."""
         ...
 
-    async def delete_many(self, keys: List[str], bucket: Optional[str] = None) -> None:
+    async def delete_many(self, keys: list[str], bucket: str | None = None) -> None:
         """Deletes multiple objects from storage."""
         ...
 
-    async def exists(self, key: str, bucket: Optional[str] = None) -> bool:
+    async def exists(self, key: str, bucket: str | None = None) -> bool:
         """Checks if an object exists in storage."""
         ...
 
     async def get_metadata(
-        self, key: str, bucket: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, key: str, bucket: str | None = None
+    ) -> dict[str, Any]:
         """Returns metadata such as size and content type for an object."""
         ...
 
-    async def check_health(self) -> Dict[str, Any]:
+    async def check_health(self) -> dict[str, Any]:
         """Checks connectivity to object storage."""
         ...
 
@@ -85,16 +86,16 @@ class S3StorageBackend:
 
     def __init__(
         self,
-        endpoint_url: Optional[str] = None,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        region_name: Optional[str] = None,
-        use_ssl: Optional[bool] = None,
-        inputs_bucket: Optional[str] = None,
-        outputs_bucket: Optional[str] = None,
-        provider: Optional[str] = None,
-        public_domain: Optional[str] = None,
-        presigned_endpoint_override: Optional[str] = None,
+        endpoint_url: str | None = None,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        region_name: str | None = None,
+        use_ssl: bool | None = None,
+        inputs_bucket: str | None = None,
+        outputs_bucket: str | None = None,
+        provider: str | None = None,
+        public_domain: str | None = None,
+        presigned_endpoint_override: str | None = None,
     ) -> None:
         self.session = aioboto3.Session()
         self.endpoint_url = endpoint_url or settings.STORAGE_ENDPOINT
@@ -110,7 +111,7 @@ class S3StorageBackend:
             presigned_endpoint_override or settings.STORAGE_PRESIGNED_ENDPOINT_OVERRIDE
         )
 
-    def _resolve_bucket(self, key: str, bucket: Optional[str] = None) -> str:
+    def _resolve_bucket(self, key: str, bucket: str | None = None) -> str:
         if bucket:
             return bucket
         if key.startswith("outputs/"):
@@ -151,7 +152,7 @@ class S3StorageBackend:
         key: str,
         data: bytes,
         content_type: str = "application/pdf",
-        bucket: Optional[str] = None,
+        bucket: str | None = None,
     ) -> str:
         target_bucket = self._resolve_bucket(key, bucket)
         try:
@@ -167,7 +168,7 @@ class S3StorageBackend:
             logger.error(f"Failed to upload {key} to {target_bucket}: {e}")
             raise StorageError(f"Failed to upload object: {str(e)}")
 
-    async def download(self, key: str, bucket: Optional[str] = None) -> bytes:
+    async def download(self, key: str, bucket: str | None = None) -> bytes:
         target_bucket = self._resolve_bucket(key, bucket)
         try:
             async with self._get_client_context() as s3:
@@ -187,7 +188,7 @@ class S3StorageBackend:
         key: str,
         expires_in: int = 900,
         content_type: str = "application/pdf",
-        bucket: Optional[str] = None,
+        bucket: str | None = None,
     ) -> str:
         target_bucket = bucket or self.inputs_bucket
         try:
@@ -210,11 +211,11 @@ class S3StorageBackend:
         self,
         key: str,
         expires_in: int = 300,
-        filename: Optional[str] = None,
-        bucket: Optional[str] = None,
+        filename: str | None = None,
+        bucket: str | None = None,
     ) -> str:
         target_bucket = self._resolve_bucket(key, bucket)
-        params: Dict[str, Any] = {
+        params: dict[str, Any] = {
             "Bucket": target_bucket,
             "Key": key,
         }
@@ -234,7 +235,7 @@ class S3StorageBackend:
             logger.error(f"Failed to generate download URL for {key}: {e}")
             raise StorageError(f"Failed to generate presigned download URL: {str(e)}")
 
-    async def delete(self, key: str, bucket: Optional[str] = None) -> None:
+    async def delete(self, key: str, bucket: str | None = None) -> None:
         target_bucket = self._resolve_bucket(key, bucket)
         try:
             async with self._get_client_context() as s3:
@@ -242,11 +243,11 @@ class S3StorageBackend:
         except Exception as e:
             logger.warning(f"Failed to delete {key} from {target_bucket}: {e}")
 
-    async def delete_many(self, keys: List[str], bucket: Optional[str] = None) -> None:
+    async def delete_many(self, keys: list[str], bucket: str | None = None) -> None:
         if not keys:
             return
         # Group keys by bucket
-        buckets_map: Dict[str, List[str]] = {}
+        buckets_map: dict[str, list[str]] = {}
         for k in keys:
             b = self._resolve_bucket(k, bucket)
             buckets_map.setdefault(b, []).append(k)
@@ -262,7 +263,7 @@ class S3StorageBackend:
             except Exception as e:
                 logger.warning(f"Failed to batch delete from {b}: {e}")
 
-    async def exists(self, key: str, bucket: Optional[str] = None) -> bool:
+    async def exists(self, key: str, bucket: str | None = None) -> bool:
         target_bucket = self._resolve_bucket(key, bucket)
         try:
             async with self._get_client_context() as s3:
@@ -272,8 +273,8 @@ class S3StorageBackend:
             return False
 
     async def get_metadata(
-        self, key: str, bucket: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, key: str, bucket: str | None = None
+    ) -> dict[str, Any]:
         target_bucket = self._resolve_bucket(key, bucket)
         try:
             async with self._get_client_context() as s3:
@@ -286,7 +287,7 @@ class S3StorageBackend:
         except Exception as e:
             raise StorageError(f"Object metadata not found: {str(e)}")
 
-    async def check_health(self) -> Dict[str, Any]:
+    async def check_health(self) -> dict[str, Any]:
         """Verify storage connection by listing or inspecting configured buckets."""
         try:
             async with asyncio.timeout(3.0):
@@ -350,14 +351,14 @@ class InMemoryStorageBackend:
     """In-memory storage implementation for unit tests and local mock isolation."""
 
     def __init__(self) -> None:
-        self.buckets: Dict[str, Dict[str, Dict[str, Any]]] = {
+        self.buckets: dict[str, dict[str, dict[str, Any]]] = {
             settings.STORAGE_BUCKET_INPUTS: {},
             settings.STORAGE_BUCKET_OUTPUTS: {},
         }
         self.inputs_bucket = settings.STORAGE_BUCKET_INPUTS
         self.outputs_bucket = settings.STORAGE_BUCKET_OUTPUTS
 
-    def _resolve_bucket(self, key: str, bucket: Optional[str] = None) -> str:
+    def _resolve_bucket(self, key: str, bucket: str | None = None) -> str:
         if bucket:
             return bucket
         if key.startswith("outputs/"):
@@ -369,7 +370,7 @@ class InMemoryStorageBackend:
         key: str,
         data: bytes,
         content_type: str = "application/pdf",
-        bucket: Optional[str] = None,
+        bucket: str | None = None,
     ) -> str:
         b = self._resolve_bucket(key, bucket)
         if b not in self.buckets:
@@ -378,11 +379,11 @@ class InMemoryStorageBackend:
             "data": data,
             "content_type": content_type,
             "size_bytes": len(data),
-            "updated_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(UTC),
         }
         return key
 
-    async def download(self, key: str, bucket: Optional[str] = None) -> bytes:
+    async def download(self, key: str, bucket: str | None = None) -> bytes:
         b = self._resolve_bucket(key, bucket)
         if b not in self.buckets or key not in self.buckets[b]:
             raise StorageError(f"Object {key} not found in {b}")
@@ -393,7 +394,7 @@ class InMemoryStorageBackend:
         key: str,
         expires_in: int = 900,
         content_type: str = "application/pdf",
-        bucket: Optional[str] = None,
+        bucket: str | None = None,
     ) -> str:
         b = self._resolve_bucket(key, bucket)
         return f"http://mock-storage.local/{b}/{key}?upload_expires={expires_in}"
@@ -402,8 +403,8 @@ class InMemoryStorageBackend:
         self,
         key: str,
         expires_in: int = 300,
-        filename: Optional[str] = None,
-        bucket: Optional[str] = None,
+        filename: str | None = None,
+        bucket: str | None = None,
     ) -> str:
         b = self._resolve_bucket(key, bucket)
         url = f"http://mock-storage.local/{b}/{key}?download_expires={expires_in}"
@@ -411,24 +412,24 @@ class InMemoryStorageBackend:
             url += f"&filename={filename}"
         return url
 
-    async def delete(self, key: str, bucket: Optional[str] = None) -> None:
+    async def delete(self, key: str, bucket: str | None = None) -> None:
         b = self._resolve_bucket(key, bucket)
         if b in self.buckets and key in self.buckets[b]:
             del self.buckets[b][key]
 
-    async def delete_many(self, keys: List[str], bucket: Optional[str] = None) -> None:
+    async def delete_many(self, keys: list[str], bucket: str | None = None) -> None:
         for k in keys:
             b = self._resolve_bucket(k, bucket)
             if b in self.buckets:
                 self.buckets[b].pop(k, None)
 
-    async def exists(self, key: str, bucket: Optional[str] = None) -> bool:
+    async def exists(self, key: str, bucket: str | None = None) -> bool:
         b = self._resolve_bucket(key, bucket)
         return b in self.buckets and key in self.buckets[b]
 
     async def get_metadata(
-        self, key: str, bucket: Optional[str] = None
-    ) -> Dict[str, Any]:
+        self, key: str, bucket: str | None = None
+    ) -> dict[str, Any]:
         b = self._resolve_bucket(key, bucket)
         if b not in self.buckets or key not in self.buckets[b]:
             raise StorageError(f"Object {key} not found in {b}")
@@ -439,7 +440,7 @@ class InMemoryStorageBackend:
             "last_modified": item["updated_at"],
         }
 
-    async def check_health(self) -> Dict[str, Any]:
+    async def check_health(self) -> dict[str, Any]:
         return {
             "status": "connected",
             "buckets_available": list(self.buckets.keys()),
@@ -463,5 +464,5 @@ def set_storage_backend(backend: StorageBackend) -> None:
     storage_backend = backend
 
 
-async def check_storage_health() -> Dict[str, Any]:
+async def check_storage_health() -> dict[str, Any]:
     return await storage_backend.check_health()

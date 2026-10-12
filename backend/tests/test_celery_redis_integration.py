@@ -1,6 +1,6 @@
 import socket
+
 import pytest
-from app.core.config import settings
 
 
 def is_redis_available() -> bool:

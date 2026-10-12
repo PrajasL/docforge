@@ -1,10 +1,10 @@
 import hashlib
 import os
 import re
-from typing import Optional
+
 from app.core.config import settings
 from app.core.errors import AppException
-
+from app.core.scanner import ScanResult, scanner
 
 PDF_MAGIC_BYTES = b"%PDF-"
 PDF_MIME_TYPES = {"application/pdf", "application/x-pdf"}
@@ -14,15 +14,12 @@ JPG_MIME_TYPES = {"image/jpeg", "image/jpg", "image/pjpeg"}
 JPG_EXTENSIONS = {".jpg", ".jpeg"}
 
 
-from app.core.scanner import scanner, ScanResult
-
-
 class FileValidationError(AppException):
     def __init__(self, code: str, message: str, status_code: int = 422) -> None:
         super().__init__(status_code=status_code, code=code, message=message)
 
 
-def sanitize_filename(filename: Optional[str], default_ext: str = ".pdf") -> str:
+def sanitize_filename(filename: str | None, default_ext: str = ".pdf") -> str:
     """Sanitizes user-provided filename to prevent path traversal, null byte injections, and shell escapes."""
     if not filename:
         return f"document{default_ext}"
@@ -46,7 +43,7 @@ def sanitize_filename(filename: Optional[str], default_ext: str = ".pdf") -> str
     return cleaned or f"document{default_ext}"
 
 
-async def scan_file_content(content: bytes, filename: Optional[str] = None) -> ScanResult:
+async def scan_file_content(content: bytes, filename: str | None = None) -> ScanResult:
     """
     Scans file content using ClamAV antivirus engine.
     Raises FileValidationError with status 400 if malware signature is detected.
@@ -118,9 +115,9 @@ def calculate_sha256(data: bytes) -> str:
 
 def validate_pdf_file(
     content: bytes,
-    filename: Optional[str] = None,
-    content_type: Optional[str] = None,
-    max_size_bytes: Optional[int] = None,
+    filename: str | None = None,
+    content_type: str | None = None,
+    max_size_bytes: int | None = None,
 ) -> None:
     """
     Performs comprehensive validation on a PDF file:
@@ -169,9 +166,9 @@ def validate_pdf_file(
 
 def validate_jpg_file(
     content: bytes,
-    filename: Optional[str] = None,
-    content_type: Optional[str] = None,
-    max_size_bytes: Optional[int] = None,
+    filename: str | None = None,
+    content_type: str | None = None,
+    max_size_bytes: int | None = None,
 ) -> None:
     """
     Performs comprehensive validation on a JPG/JPEG image file:
@@ -220,8 +217,9 @@ def validate_jpg_file(
 
     # Validate image data integrity using PIL
     try:
-        from PIL import Image
         import io
+
+        from PIL import Image
         with Image.open(io.BytesIO(content)) as img:
             img.verify()
     except Exception:

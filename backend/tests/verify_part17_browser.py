@@ -1,7 +1,8 @@
-import os
 import sys
 import time
+
 from playwright.sync_api import sync_playwright
+
 
 def run_part17_browser_verification():
     console_logs = []
@@ -70,7 +71,7 @@ def run_part17_browser_verification():
         for tool_name in expected_tools:
             tool_locator = page.locator(f"h3:has-text('{tool_name}')")
             assert tool_locator.is_visible(), f"Tool card '{tool_name}' not visible in directory"
-        print(f"  [PASS] All 12 tool cards verified in directory.")
+        print("  [PASS] All 12 tool cards verified in directory.")
 
         # 4. Search Filter
         print("[Step 5] Testing instant search input...")

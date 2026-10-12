@@ -1,10 +1,12 @@
 import io
 import os
-import pytest
+
 import pypdf
+import pytest
+
 from app.core.errors import AppException
-from app.tools.extract_pages import ExtractPagesPDFHandler, parse_extract_pages
 from app.tools.base import ProcessingContext
+from app.tools.extract_pages import ExtractPagesPDFHandler, parse_extract_pages
 
 
 def create_sample_pdf(page_count: int = 5, rotated_pages: dict = None) -> bytes:

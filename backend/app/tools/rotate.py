@@ -1,15 +1,15 @@
 import hashlib
-import io
 import os
-from typing import Dict, Any, List, Set, Union
+from typing import Any
+
 import pypdf
 from pypdf.errors import PdfReadError, PdfStreamError, PyPdfError
 
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
-def parse_page_selection(pages_spec: Union[str, List[int], None], total_pages: int) -> Set[int]:
+def parse_page_selection(pages_spec: str | list[int] | None, total_pages: int) -> set[int]:
     """
     Parses a page selection specification into a set of 0-indexed page indices.
     Examples of pages_spec:
@@ -113,7 +113,7 @@ class RotatePDFHandler(ToolHandler):
     max_input_files = 1
     accepted_content_types = ["application/pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates rotation angle and page settings."""
         if not config:
             return
@@ -164,7 +164,7 @@ class RotatePDFHandler(ToolHandler):
                     message=f"Rotation angle must be 90, 180, or 270 degrees. Received: {angle}°.",
                 )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """Executes PDF rotation pipeline."""
         # 1. Validate file count
         if len(context.input_files) != 1:
@@ -226,7 +226,7 @@ class RotatePDFHandler(ToolHandler):
 
             # 3. Determine rotation per page
             # Mapping of 0-indexed page index -> rotation angle in degrees
-            rotations_to_apply: Dict[int, int] = {}
+            rotations_to_apply: dict[int, int] = {}
 
             if "page_rotations" in context.config:
                 raw_mapping = context.config["page_rotations"]

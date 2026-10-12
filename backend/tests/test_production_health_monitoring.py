@@ -1,18 +1,17 @@
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
-from httpx import AsyncClient
 from botocore.exceptions import ClientError
+from httpx import AsyncClient
 
 from app.core.monitoring import (
-    sanitize_url,
-    sanitize_data_dict,
-    sentry_before_send,
-    sentry_before_breadcrumb,
     init_monitoring,
+    sanitize_data_dict,
+    sanitize_url,
+    sentry_before_send,
 )
-from app.core.storage import S3StorageBackend
 from app.core.scanner import ClamAVScanner
-
+from app.core.storage import S3StorageBackend
 
 # ===================================================================
 # 1. Monitoring & Telemetry Data Scrubber Tests

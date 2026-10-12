@@ -39,9 +39,9 @@ export const DEFAULT_PRODUCTION_SITE_URL = "https://docforge.com";
 /**
  * Returns the configured canonical site URL for metadata, sitemap, and robots.txt.
  * Priority:
- * 1. NEXT_PUBLIC_SITE_URL environment variable
+ * 1. NEXT_PUBLIC_SITE_URL environment variable (explicit production domain)
  * 2. Vercel deployment URL (if available)
- * 3. Default production domain (https://docforge.com)
+ * 3. Default fallback domain (https://docforge.com)
  */
 export const getSiteUrl = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
@@ -54,15 +54,25 @@ export const getSiteUrl = (): string => {
   }
 
   if (process.env.NODE_ENV === "production" && typeof window === "undefined") {
-    if (!(globalThis as any).__docforge_site_url_warned) {
+    const globalContext = globalThis as unknown as { __docforge_site_url_warned?: boolean };
+    if (!globalContext.__docforge_site_url_warned) {
       console.warn(
-        `[DocForge SEO Notice] NEXT_PUBLIC_SITE_URL is not set. Defaulting to ${DEFAULT_PRODUCTION_SITE_URL}. Set NEXT_PUBLIC_SITE_URL in production environment variables for your canonical domain.`
+        `[DocForge SEO Notice] NEXT_PUBLIC_SITE_URL is not configured. Defaulting to fallback ${DEFAULT_PRODUCTION_SITE_URL}. Configure NEXT_PUBLIC_SITE_URL in production environment variables for your verified canonical domain.`
       );
-      (globalThis as any).__docforge_site_url_warned = true;
+      globalContext.__docforge_site_url_warned = true;
     }
   }
 
   return DEFAULT_PRODUCTION_SITE_URL;
+};
+
+/**
+ * Returns true if an explicit canonical site URL has been configured
+ * via the NEXT_PUBLIC_SITE_URL environment variable.
+ */
+export const hasConfiguredSiteUrl = (): boolean => {
+  const envUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  return Boolean(envUrl && envUrl.trim().length > 0);
 };
 
 export const TOOLS_SEO_DATA: Record<string, ToolSeoData> = {
@@ -1184,6 +1194,82 @@ export const generateToolJsonLd = (tool: ToolSeoData, siteUrl: string) => {
   return {
     "@context": "https://schema.org",
     "@graph": [webApp, webPage, howTo, faqPage],
+  };
+};
+
+export const HOMEPAGE_FAQS: FaqItem[] = [
+  {
+    question: "Is DocForge free to use?",
+    answer:
+      "Yes. All 13 DocForge PDF tools are completely free to use with no hidden fees, paid tiers, or account registrations required.",
+  },
+  {
+    question: "How long are my files kept on the server?",
+    answer:
+      "Uploaded and processed files are stored temporarily with a 2-hour retention window (7,200 seconds TTL). Scheduled cleanup workers sweep every 15 minutes to permanently delete expired files.",
+  },
+  {
+    question: "Are my documents shared with third parties or used for AI training?",
+    answer:
+      "No. All PDF processing takes place in isolated worker sandboxes on DocForge's own infrastructure. We never share document contents with third parties or use them for AI or machine learning model training.",
+  },
+  {
+    question: "Can I repair damaged or corrupted PDF files?",
+    answer:
+      "Yes. The Repair PDF tool reconstructs broken cross-reference tables, repairs object trees, and salvages corrupted documents wherever structural page recovery is possible.",
+  },
+  {
+    question: "What is the maximum file size supported?",
+    answer:
+      "DocForge currently supports PDF and image files up to 50 MB per file, optimized for high processing speed and reliability.",
+  },
+];
+
+export const generateHomepageJsonLd = (siteUrl: string) => {
+  const canonicalUrl = `${siteUrl}/`;
+
+  const webSite = {
+    "@type": "WebSite",
+    "@id": `${siteUrl}#website`,
+    name: "DocForge",
+    url: canonicalUrl,
+    description:
+      "Free, private, and secure online PDF tools. Merge, split, compress, rotate, watermark, protect, unlock, and convert PDF documents with zero third-party data leaks.",
+    inLanguage: "en-US",
+  };
+
+  const webApp = {
+    "@type": "WebApplication",
+    "@id": `${siteUrl}#app`,
+    name: "DocForge Online PDF Tools",
+    url: canonicalUrl,
+    description:
+      "Comprehensive browser-grade suite of 13 PDF utilities: Merge, Split, Compress, Rotate, Watermark, Page Numbers, Protect, Unlock, Extract Pages, Organize, PDF to JPG, JPG to PDF, and Repair PDF.",
+    applicationCategory: "UtilitiesApplication",
+    operatingSystem: "All",
+    browserRequirements: "Requires modern web browser with HTML5 and JavaScript support",
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+  };
+
+  const faqPage = {
+    "@type": "FAQPage",
+    mainEntity: HOMEPAGE_FAQS.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  };
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": [webSite, webApp, faqPage],
   };
 };
 

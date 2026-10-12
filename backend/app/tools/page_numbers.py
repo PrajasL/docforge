@@ -2,17 +2,18 @@ import hashlib
 import io
 import os
 import re
-from typing import Dict, Any, Tuple
+from typing import Any
+
 import pypdf
 from pypdf.errors import PdfReadError, PdfStreamError, PyPdfError
-from reportlab.pdfgen import canvas
 from reportlab.lib import colors
+from reportlab.pdfgen import canvas
 
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
-def parse_hex_color(hex_str: str) -> Tuple[float, float, float]:
+def parse_hex_color(hex_str: str) -> tuple[float, float, float]:
     """Parses a hex color string (e.g. '#000000', '#374151') into RGB float tuple (0.0 to 1.0)."""
     if not hex_str:
         return (0.2, 0.2, 0.2)
@@ -53,7 +54,7 @@ class PageNumbersPDFHandler(ToolHandler):
     }
     VALID_FORMATS = {"n", "page_n", "page_n_of_total", "n_of_total"}
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates page numbering configuration."""
         if not config:
             return
@@ -164,7 +165,7 @@ class PageNumbersPDFHandler(ToolHandler):
                     message=f"Parameter 'margin' must be between 10 and 100 pt. Received: {mg}.",
                 )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """Executes page numbering pipeline."""
         # 1. Validate input file
         if len(context.input_files) != 1:

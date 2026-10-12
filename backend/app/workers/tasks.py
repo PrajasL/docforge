@@ -2,21 +2,22 @@ import asyncio
 import os
 import tempfile
 import uuid
-from datetime import datetime, timezone
-from typing import Dict, Any, List
+from datetime import UTC, datetime
+from typing import Any
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 import app.core.database as db_core
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.pool import NullPool
 from app.core.config import settings
 from app.core.errors import AppException
 from app.core.logging import logger
-from app.core.storage import get_storage
 from app.core.redis import publish_job_progress
-from app.jobs.models import Job, JobStatus
+from app.core.storage import get_storage
+from app.jobs.models import JobStatus
 from app.jobs.service import JobService, generate_output_storage_key
-from app.tools.registry import get_tool_handler
 from app.tools.base import ProcessingContext
+from app.tools.registry import get_tool_handler
 from app.workers.celery_app import celery_app
 
 # Dedicated worker engine with NullPool to prevent event-loop-closed errors across Celery task executions
@@ -41,7 +42,7 @@ def get_worker_session_maker() -> async_sessionmaker[AsyncSession]:
     return WorkerAsyncSessionLocal
 
 
-async def _async_process_job(job_id: str) -> Dict[str, Any]:
+async def _async_process_job(job_id: str) -> dict[str, Any]:
     """Asynchronous background pipeline for processing a PDF tool job."""
     session_factory = get_worker_session_maker()
     async with session_factory() as session:
@@ -83,7 +84,7 @@ async def _async_process_job(job_id: str) -> Dict[str, Any]:
             # 4. Create isolated temporary directory
             with tempfile.TemporaryDirectory(prefix=f"docforge_job_{job_id}_", ignore_cleanup_errors=True) as temp_dir:
                 # 5. Download input files to temp directory
-                downloaded_files: List[Dict[str, Any]] = []
+                downloaded_files: list[dict[str, Any]] = []
                 for file_meta in job.input_files or []:
                     storage_key = file_meta.get("storage_key")
                     fid = file_meta.get("id")
@@ -196,7 +197,7 @@ async def _async_process_job(job_id: str) -> Dict[str, Any]:
                     "sha256": result.get("sha256"),
                     "storage_key": output_storage_key,
                     "content_type": content_type,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
+                    "created_at": datetime.now(UTC).isoformat(),
                 }
                 job.progress = 100
                 job.transition_to(JobStatus.COMPLETED)
@@ -238,7 +239,7 @@ async def _async_process_job(job_id: str) -> Dict[str, Any]:
 
 
 @celery_app.task(name="app.workers.tasks.process_job_task", bind=True, max_retries=2)
-def process_job_task(self, job_id: str) -> Dict[str, Any]:
+def process_job_task(self, job_id: str) -> dict[str, Any]:
     """Celery task entrypoint for all registered tool processing jobs."""
     try:
         return asyncio.run(_async_process_job(job_id))
@@ -249,7 +250,7 @@ def process_job_task(self, job_id: str) -> Dict[str, Any]:
 
 
 
-async def _async_test_job_pipeline(job_id: str) -> Dict[str, Any]:
+async def _async_test_job_pipeline(job_id: str) -> dict[str, Any]:
     """Async execution for the basic test processing job."""
     session_factory = get_worker_session_maker()
     async with session_factory() as session:
@@ -287,7 +288,7 @@ async def _async_test_job_pipeline(job_id: str) -> Dict[str, Any]:
                 "size_bytes": len(dummy_pdf_content),
                 "content_type": "application/pdf",
                 "storage_key": output_storage_key,
-                "created_at": datetime.now(timezone.utc).isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
             }
             job.progress = 100
 
@@ -312,7 +313,7 @@ async def _async_test_job_pipeline(job_id: str) -> Dict[str, Any]:
 
 
 @celery_app.task(name="app.workers.tasks.test_job_task", bind=True, max_retries=2)
-def test_job_task(self, job_id: str) -> Dict[str, Any]:
+def test_job_task(self, job_id: str) -> dict[str, Any]:
     """Celery task entrypoint for test processing jobs."""
     try:
         return asyncio.run(_async_test_job_pipeline(job_id))

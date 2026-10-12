@@ -1,11 +1,12 @@
 import hashlib
 import os
-from typing import Dict, Any
+from typing import Any
+
 import pypdf
 from pypdf.errors import PdfReadError, PdfStreamError, PyPdfError
 
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
 class ProtectPDFHandler(ToolHandler):
@@ -21,7 +22,7 @@ class ProtectPDFHandler(ToolHandler):
     max_input_files = 1
     accepted_content_types = ["application/pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates password protection configuration."""
         if not config:
             raise AppException(
@@ -53,7 +54,7 @@ class ProtectPDFHandler(ToolHandler):
                 message="Password and confirmation password do not match.",
             )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """Executes PDF encryption pipeline using AES-256."""
         # 1. Validate input file
         if len(context.input_files) != 1:

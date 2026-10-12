@@ -1,7 +1,6 @@
 import pytest
 from httpx import AsyncClient
 
-
 VALID_PDF_BYTES = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<<>>\n%%EOF\n"
 
 

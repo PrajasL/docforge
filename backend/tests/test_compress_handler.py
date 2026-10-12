@@ -2,9 +2,10 @@ import io
 import os
 import shutil
 import tempfile
-import pytest
-import pypdf
+
 import pikepdf
+import pypdf
+import pytest
 from PIL import Image
 
 from app.core.errors import AppException
@@ -16,7 +17,7 @@ def create_sample_pdf(num_pages: int = 3, width: int = 612, height: int = 792) -
     """Creates a simple multi-page PDF."""
     writer = pypdf.PdfWriter()
     for i in range(num_pages):
-        page = writer.add_blank_page(width=width + i * 10, height=height + i * 10)
+        writer.add_blank_page(width=width + i * 10, height=height + i * 10)
     buf = io.BytesIO()
     writer.write(buf)
     return buf.getvalue()

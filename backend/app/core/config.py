@@ -1,5 +1,6 @@
 import json
-from typing import List, Union, Any
+from typing import Any
+
 from pydantic import computed_field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -20,7 +21,7 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
 
     # CORS
-    CORS_ORIGINS: List[str] = [
+    CORS_ORIGINS: list[str] = [
         "http://localhost:3000",
         "http://127.0.0.1:3000",
         "http://localhost:8000",
@@ -45,7 +46,7 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "docforge"
     POSTGRES_PASSWORD: str = "docforge_dev"
     POSTGRES_DB: str = "docforge"
-    DATABASE_URL_OVERRIDE: Union[str, None] = None
+    DATABASE_URL_OVERRIDE: str | None = None
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -69,11 +70,11 @@ class Settings(BaseSettings):
     STORAGE_BUCKET_OUTPUTS: str = "docforge-outputs"
     STORAGE_USE_SSL: bool = False
     STORAGE_REGION: str = "us-east-1"
-    STORAGE_PUBLIC_DOMAIN: Union[str, None] = None  # e.g., "https://pub-r2.docforge.com"
-    STORAGE_PRESIGNED_ENDPOINT_OVERRIDE: Union[str, None] = None  # e.g., "http://localhost:9000"
+    STORAGE_PUBLIC_DOMAIN: str | None = None  # e.g., "https://pub-r2.docforge.com"
+    STORAGE_PRESIGNED_ENDPOINT_OVERRIDE: str | None = None  # e.g., "http://localhost:9000"
 
     # Monitoring & Telemetry (Sentry)
-    SENTRY_DSN: Union[str, None] = None
+    SENTRY_DSN: str | None = None
     SENTRY_ENVIRONMENT: str = "production"
     SENTRY_TRACES_SAMPLE_RATE: float = 0.1
     SENTRY_PROFILES_SAMPLE_RATE: float = 0.0
@@ -112,11 +113,11 @@ class Settings(BaseSettings):
     RATE_LIMIT_UPLOAD_WINDOW: int = 60  # seconds
     RATE_LIMIT_GENERAL_LIMIT: int = 120  # requests per window
     RATE_LIMIT_GENERAL_WINDOW: int = 60  # seconds
-    TRUSTED_PROXIES: Union[List[str], str] = ["127.0.0.1", "::1", "localhost"]
+    TRUSTED_PROXIES: list[str] | str = ["127.0.0.1", "::1", "localhost"]
 
     @field_validator("TRUSTED_PROXIES")
     @classmethod
-    def normalize_trusted_proxies(cls, v: Union[List[str], str]) -> List[str]:
+    def normalize_trusted_proxies(cls, v: list[str] | str) -> list[str]:
         if isinstance(v, str):
             v_stripped = v.strip()
             if v_stripped.startswith("[") and v_stripped.endswith("]"):

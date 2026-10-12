@@ -1,11 +1,12 @@
 import hashlib
 import os
-from typing import Dict, Any
+from typing import Any
+
 import pypdf
 from pypdf.errors import PdfReadError, PdfStreamError, PyPdfError
 
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
 class UnlockPDFHandler(ToolHandler):
@@ -21,7 +22,7 @@ class UnlockPDFHandler(ToolHandler):
     max_input_files = 1
     accepted_content_types = ["application/pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates unlock configuration and password parameter."""
         if not config:
             raise AppException(
@@ -45,7 +46,7 @@ class UnlockPDFHandler(ToolHandler):
                 message="Password cannot exceed 128 characters.",
             )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """Executes PDF decryption pipeline to remove password protection."""
         # 1. Validate input file
         if len(context.input_files) != 1:

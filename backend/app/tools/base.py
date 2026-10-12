@@ -1,14 +1,14 @@
-import os
 from abc import ABC, abstractmethod
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Dict, Any, List, Optional, Callable, Awaitable
+from typing import Any
 
 
 @dataclass
 class ProcessingContext:
     job_id: str
-    input_files: List[Dict[str, Any]]
-    config: Dict[str, Any]
+    input_files: list[dict[str, Any]]
+    config: dict[str, Any]
     temp_dir: str
     progress_callback: Callable[[int], Awaitable[None]]
 
@@ -20,15 +20,15 @@ class ToolHandler(ABC):
     display_name: str
     min_input_files: int
     max_input_files: int
-    accepted_content_types: List[str]
+    accepted_content_types: list[str]
 
     @abstractmethod
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates tool-specific configuration. Raises AppException if invalid."""
         pass
 
     @abstractmethod
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """
         Executes the tool processing logic.
         Returns a dict containing output file details:
