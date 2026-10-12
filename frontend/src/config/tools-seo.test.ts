@@ -1,14 +1,33 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
-  TOOL_SEO_REGISTRY,
   getAllToolSlugs,
   getToolSeoData,
   getToolMetadata,
   getSiteUrl,
   generateToolJsonLd,
+  generateHomepageJsonLd,
+  HOMEPAGE_FAQS,
 } from "./tools-seo";
 import sitemap from "@/app/sitemap";
 import robots from "@/app/robots";
+
+interface GraphItem {
+  "@type": string;
+  name?: string;
+  url?: string;
+  applicationCategory?: string;
+  operatingSystem?: string;
+  browserRequirements?: string;
+  offers?: { price: string };
+  aggregateRating?: unknown;
+  review?: unknown;
+  isPartOf?: { "@type": string };
+  howToName?: string;
+  steps?: { name: string; text: string }[];
+  faqs?: { question: string; answer: string }[];
+  step?: { "@type": string; position: number; name: string; text: string }[];
+  mainEntity?: { "@type": string; name: string; acceptedAnswer: { "@type": string; text: string } }[];
+}
 
 describe("Part 18 — SEO Architecture & Tool Landing Page Metadata", () => {
   const originalEnv = process.env.NEXT_PUBLIC_SITE_URL;
@@ -170,44 +189,44 @@ describe("Part 18 — SEO Architecture & Tool Landing Page Metadata", () => {
       expect(parsed["@context"]).toBe("https://schema.org");
       expect(Array.isArray(parsed["@graph"])).toBe(true);
 
-      const graph = parsed["@graph"];
-      const app = graph.find((item: any) => item["@type"] === "WebApplication");
-      const webPage = graph.find((item: any) => item["@type"] === "WebPage");
-      const howTo = graph.find((item: any) => item["@type"] === "HowTo");
-      const faq = graph.find((item: any) => item["@type"] === "FAQPage");
+      const graph = parsed["@graph"] as GraphItem[];
+      const app = graph.find((item) => item["@type"] === "WebApplication");
+      const webPage = graph.find((item) => item["@type"] === "WebPage");
+      const howTo = graph.find((item) => item["@type"] === "HowTo");
+      const faq = graph.find((item) => item["@type"] === "FAQPage");
 
       expect(app).toBeDefined();
-      expect(app.name).toContain("DocForge");
-      expect(["UtilitiesApplication", "SecurityApplication"]).toContain(app.applicationCategory);
-      expect(app.offers.price).toBe("0");
-      expect(app.operatingSystem).toBe("All");
-      expect(app.browserRequirements).toBeDefined();
+      expect(app?.name).toContain("DocForge");
+      expect(["UtilitiesApplication", "SecurityApplication"]).toContain(app?.applicationCategory);
+      expect(app?.offers?.price).toBe("0");
+      expect(app?.operatingSystem).toBe("All");
+      expect(app?.browserRequirements).toBeDefined();
       // Crucial: No fake ratings or invented reviews
-      expect((app as any).aggregateRating).toBeUndefined();
-      expect((app as any).review).toBeUndefined();
+      expect(app?.aggregateRating).toBeUndefined();
+      expect(app?.review).toBeUndefined();
 
       expect(webPage).toBeDefined();
-      expect(webPage.name).toBe(tool.title);
-      expect(webPage.url).toBe(`${siteUrl}${tool.path}`);
-      expect(webPage.isPartOf["@type"]).toBe("WebSite");
+      expect(webPage!.name).toBe(tool.title);
+      expect(webPage!.url).toBe(`${siteUrl}${tool.path}`);
+      expect(webPage!.isPartOf!["@type"]).toBe("WebSite");
 
       expect(howTo).toBeDefined();
-      expect(howTo.name).toBe(tool.howToName);
-      expect(howTo.step).toHaveLength(tool.steps.length);
-      for (let i = 0; i < howTo.step.length; i++) {
-        expect(howTo.step[i]["@type"]).toBe("HowToStep");
-        expect(howTo.step[i].position).toBe(i + 1);
-        expect(howTo.step[i].name).toBe(tool.steps[i].name);
-        expect(howTo.step[i].text).toBe(tool.steps[i].text);
+      expect(howTo!.name).toBe(tool.howToName);
+      expect(howTo!.step).toHaveLength(tool.steps.length);
+      for (let i = 0; i < howTo!.step!.length; i++) {
+        expect(howTo!.step![i]["@type"]).toBe("HowToStep");
+        expect(howTo!.step![i].position).toBe(i + 1);
+        expect(howTo!.step![i].name).toBe(tool.steps[i].name);
+        expect(howTo!.step![i].text).toBe(tool.steps[i].text);
       }
 
       expect(faq).toBeDefined();
-      expect(faq.mainEntity).toHaveLength(tool.faqs.length);
-      for (let i = 0; i < faq.mainEntity.length; i++) {
-        expect(faq.mainEntity[i]["@type"]).toBe("Question");
-        expect(faq.mainEntity[i].name).toBe(tool.faqs[i].question);
-        expect(faq.mainEntity[i].acceptedAnswer["@type"]).toBe("Answer");
-        expect(faq.mainEntity[i].acceptedAnswer.text).toBe(tool.faqs[i].answer);
+      expect(faq!.mainEntity).toHaveLength(tool.faqs.length);
+      for (let i = 0; i < faq!.mainEntity!.length; i++) {
+        expect(faq!.mainEntity![i]["@type"]).toBe("Question");
+        expect(faq!.mainEntity![i].name).toBe(tool.faqs[i].question);
+        expect(faq!.mainEntity![i].acceptedAnswer["@type"]).toBe("Answer");
+        expect(faq!.mainEntity![i].acceptedAnswer.text).toBe(tool.faqs[i].answer);
       }
     }
   });
@@ -234,4 +253,28 @@ describe("Part 18 — SEO Architecture & Tool Landing Page Metadata", () => {
     }
   });
 
+  it("validates homepage JSON-LD and FAQ structure", () => {
+    const siteUrl = "https://docforge.com";
+
+    expect(HOMEPAGE_FAQS.length).toBeGreaterThanOrEqual(5);
+
+    const jsonLd = generateHomepageJsonLd(siteUrl);
+    expect(jsonLd["@context"]).toBe("https://schema.org");
+    expect(jsonLd["@graph"]).toBeDefined();
+
+    const graph = jsonLd["@graph"] as GraphItem[];
+    const webSite = graph.find((i) => i["@type"] === "WebSite");
+    const webApp = graph.find((i) => i["@type"] === "WebApplication");
+    const faq = graph.find((i) => i["@type"] === "FAQPage");
+
+    expect(webSite).toBeDefined();
+    expect(webSite?.url).toBe(`${siteUrl}/`);
+
+    expect(webApp).toBeDefined();
+    expect(webApp?.applicationCategory).toBe("UtilitiesApplication");
+    expect(webApp?.offers?.price).toBe("0");
+
+    expect(faq).toBeDefined();
+    expect(faq?.mainEntity).toHaveLength(HOMEPAGE_FAQS.length);
+  });
 });
