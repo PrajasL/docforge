@@ -2,13 +2,14 @@ import io
 import os
 import shutil
 import tempfile
-import pytest
-import pypdf
+
 import pikepdf
+import pypdf
+import pytest
 
 from app.core.errors import AppException
-from app.tools.repair import RepairPDFHandler
 from app.tools.base import ProcessingContext
+from app.tools.repair import RepairPDFHandler
 
 
 def create_sample_pdf(num_pages: int = 2, width: float = 200, height: float = 300) -> bytes:
@@ -178,7 +179,7 @@ async def test_repair_encrypted_pdf_rejected(temp_workspace):
 async def test_repair_empty_file_rejected(temp_workspace):
     handler = RepairPDFHandler()
     input_path = os.path.join(temp_workspace, "empty.pdf")
-    with open(input_path, "wb") as f:
+    with open(input_path, "wb"):
         pass
 
     context = ProcessingContext(

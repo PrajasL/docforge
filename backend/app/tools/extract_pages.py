@@ -1,17 +1,17 @@
 import hashlib
 import os
-import re
-from typing import Dict, Any, List, Union
+from typing import Any
+
 import pypdf
 from pypdf.errors import PdfReadError, PdfStreamError, PyPdfError
 
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
 def parse_extract_pages(
-    pages_spec: Union[str, List[Union[str, int]]], total_pages: int, extract_all: bool = False
-) -> List[int]:
+    pages_spec: str | list[str | int], total_pages: int, extract_all: bool = False
+) -> list[int]:
     """
     Parses page specification into a 0-indexed list of page indices to extract,
     preserving the exact order specified by the user.
@@ -27,12 +27,12 @@ def parse_extract_pages(
     if extract_all or (isinstance(pages_spec, str) and pages_spec.strip().lower() == "all"):
         return list(range(total_pages))
 
-    raw_parts: List[str] = []
+    raw_parts: list[str] = []
     if isinstance(pages_spec, str):
         raw_parts = [p.strip() for p in pages_spec.split(",") if p.strip()]
     elif isinstance(pages_spec, list):
         for item in pages_spec:
-            if isinstance(item, (int, str)):
+            if isinstance(item, int | str):
                 for sub in str(item).split(","):
                     if sub.strip():
                         raw_parts.append(sub.strip())
@@ -44,7 +44,7 @@ def parse_extract_pages(
             message="Please specify at least one valid page number or range to extract (e.g. '1, 3-5, 8').",
         )
 
-    extracted_indices: List[int] = []
+    extracted_indices: list[int] = []
 
     for part in raw_parts:
         if "-" in part:
@@ -133,7 +133,7 @@ class ExtractPagesPDFHandler(ToolHandler):
     max_input_files = 1
     accepted_content_types = ["application/pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates extract pages configuration before worker execution."""
         if not config:
             raise AppException(
@@ -152,7 +152,7 @@ class ExtractPagesPDFHandler(ToolHandler):
                 message="Please specify pages to extract (e.g. '1, 3-5, 8') or enable 'extract_all'.",
             )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """Executes page extraction pipeline into a single PDF."""
         # 1. Validate input file
         if len(context.input_files) != 1:

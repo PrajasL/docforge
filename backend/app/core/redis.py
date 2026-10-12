@@ -1,12 +1,13 @@
 import asyncio
-from typing import Dict, Any, Optional
+from typing import Any
+
 import redis.asyncio as aioredis
 
 from app.core.config import settings
 from app.core.logging import logger
 
-_redis_client: Optional[aioredis.Redis] = None
-_redis_loop: Optional[asyncio.AbstractEventLoop] = None
+_redis_client: aioredis.Redis | None = None
+_redis_loop: asyncio.AbstractEventLoop | None = None
 
 
 def get_redis_client() -> aioredis.Redis:
@@ -49,7 +50,7 @@ async def close_redis_client() -> None:
         _redis_loop = None
 
 
-async def check_redis_health() -> Dict[str, Any]:
+async def check_redis_health() -> dict[str, Any]:
     """Checks Redis connectivity and returns status."""
     try:
         async with asyncio.timeout(3.0):
@@ -68,7 +69,7 @@ def get_job_progress_channel(job_id: str) -> str:
     return f"job_progress:{job_id}"
 
 
-async def publish_job_progress(job_id: str, data: Dict[str, Any]) -> None:
+async def publish_job_progress(job_id: str, data: dict[str, Any]) -> None:
     """Publishes a job progress update to Redis Pub/Sub."""
     try:
         import json

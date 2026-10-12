@@ -2,13 +2,14 @@ import hashlib
 import io
 import os
 import shutil
-from typing import Dict, Any, Set
+from typing import Any
+
 import pikepdf
 from PIL import Image
 
 from app.core.errors import AppException
 from app.core.logging import logger
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
 class CompressPDFHandler(ToolHandler):
@@ -33,7 +34,7 @@ class CompressPDFHandler(ToolHandler):
         },
     }
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates compression level and configuration parameters."""
         if not config:
             return
@@ -46,7 +47,7 @@ class CompressPDFHandler(ToolHandler):
                 message=f"Invalid compression level '{level}'. Supported levels are: recommended, balanced, maximum.",
             )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """
         Executes PDF compression pipeline.
         Re-encodes images if beneficial, applies stream compression and object streams,
@@ -114,7 +115,7 @@ class CompressPDFHandler(ToolHandler):
                 )
 
             # 4. Image optimization pass across pages
-            visited_streams: Set[int] = set()
+            visited_streams: set[int] = set()
 
             for page_idx, page in enumerate(pdf.pages):
                 try:

@@ -1,6 +1,6 @@
 import logging
 import sys
-from typing import Any, Dict
+from typing import Any
 
 
 class StructuredFormatter(logging.Formatter):
@@ -12,7 +12,7 @@ class StructuredFormatter(logging.Formatter):
         message = record.getMessage()
         name = record.name
 
-        extra_info: Dict[str, Any] = {}
+        extra_info: dict[str, Any] = {}
         if hasattr(record, "request_id"):
             extra_info["request_id"] = record.request_id
 

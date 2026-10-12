@@ -1,11 +1,13 @@
 import asyncio
-from typing import AsyncGenerator, Dict, Any
+from collections.abc import AsyncGenerator
+from typing import Any
+
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy import text
 from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
@@ -40,7 +42,7 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def check_database_health() -> Dict[str, Any]:
+async def check_database_health() -> dict[str, Any]:
     """Checks PostgreSQL connectivity and returns a status dictionary."""
     try:
         async with asyncio.timeout(3.0):

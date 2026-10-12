@@ -1,11 +1,13 @@
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from app.jobs.models import Job, JobStatus, InvalidJobTransitionError
+
+from app.jobs.models import InvalidJobTransitionError, Job, JobStatus
 
 
 def create_test_job(status: JobStatus = JobStatus.PENDING) -> Job:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return Job(
         id=uuid.uuid4(),
         session_id="test-session-123",
@@ -97,7 +99,7 @@ def test_invalid_transitions_raise_error():
 
 
 def test_job_expiration_helpers():
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     # Not expired
     job = Job(
         status=JobStatus.PENDING,

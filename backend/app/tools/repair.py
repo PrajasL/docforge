@@ -1,7 +1,8 @@
 import hashlib
 import inspect
 import os
-from typing import Dict, Any, Optional
+from typing import Any
+
 import pikepdf
 import pypdf
 
@@ -9,7 +10,7 @@ from app.core.config import settings
 from app.core.errors import AppException
 from app.core.logging import logger
 from app.files.validator import sanitize_filename
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
 async def _notify_progress(callback, percent: int) -> None:
@@ -34,7 +35,7 @@ class RepairPDFHandler(ToolHandler):
     max_input_files = 1
     accepted_content_types = ["application/pdf", "application/x-pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates tool configuration. Repair requires no special config parameters."""
         if not config:
             return
@@ -46,7 +47,7 @@ class RepairPDFHandler(ToolHandler):
                 message="output_filename must be a valid string if provided.",
             )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """
         Executes structural recovery pipeline on the input PDF file.
         1. Validates input existence, size, and boundaries.

@@ -1,10 +1,12 @@
 import io
 import os
-import pytest
+
 import pypdf
+import pytest
+
 from app.core.errors import AppException
-from app.tools.page_numbers import PageNumbersPDFHandler, parse_hex_color
 from app.tools.base import ProcessingContext
+from app.tools.page_numbers import PageNumbersPDFHandler, parse_hex_color
 
 
 def create_dummy_pdf(num_pages: int = 3, width: float = 400, height: float = 600) -> bytes:

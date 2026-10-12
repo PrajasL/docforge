@@ -1,23 +1,23 @@
 import hashlib
 import os
-from typing import Dict, Any, List, Tuple
+from typing import Any
+
 from PIL import Image, ImageOps
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen import canvas
 
 from app.core.config import settings
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 # Standard page dimensions in points (72 points/inch)
-PAGE_SIZES: Dict[str, Tuple[float, float]] = {
+PAGE_SIZES: dict[str, tuple[float, float]] = {
     "a4": (595.27559, 841.88976),
     "letter": (612.0, 792.0),
 }
 
 # Margin presets in points
-MARGIN_PRESETS: Dict[str, float] = {
+MARGIN_PRESETS: dict[str, float] = {
     "none": 0.0,
     "small": 18.0,   # 0.25 inch
     "normal": 36.0,  # 0.50 inch
@@ -36,7 +36,7 @@ class JpgToPdfPDFHandler(ToolHandler):
     max_input_files = 50
     accepted_content_types = ["image/jpeg", "image/jpg"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """
         Validates configuration options for JPG to PDF conversion.
         Supported options:
@@ -82,7 +82,7 @@ class JpgToPdfPDFHandler(ToolHandler):
                     code="INVALID_CONFIG",
                     message="Margin preset must be 'none', 'small', or 'normal'.",
                 )
-        elif isinstance(margin, (int, float)):
+        elif isinstance(margin, int | float):
             if margin < 0 or margin > 200:
                 raise AppException(
                     status_code=400,
@@ -106,7 +106,7 @@ class JpgToPdfPDFHandler(ToolHandler):
                 )
 
     def _resolve_margin(self, margin_val: Any) -> float:
-        if isinstance(margin_val, (int, float)):
+        if isinstance(margin_val, int | float):
             return float(margin_val)
         if isinstance(margin_val, str):
             return MARGIN_PRESETS.get(margin_val.lower(), 0.0)
@@ -119,7 +119,7 @@ class JpgToPdfPDFHandler(ToolHandler):
         page_size_opt: str,
         orientation_opt: str,
         margin_pt: float,
-    ) -> Tuple[float, float, float, float, float, float]:
+    ) -> tuple[float, float, float, float, float, float]:
         """
         Computes (page_width, page_height, draw_x, draw_y, draw_width, draw_height) in points.
         """
@@ -197,7 +197,7 @@ class JpgToPdfPDFHandler(ToolHandler):
 
         return page_w, page_h, draw_x, draw_y, draw_w, draw_h
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """
         Converts the ordered input JPEG files into a single combined PDF document.
         Strictly enforces all resource limits and cleans up upon completion or failure.
@@ -224,7 +224,7 @@ class JpgToPdfPDFHandler(ToolHandler):
         if file_order:
             input_files_map = {f["id"]: f for f in context.input_files}
             name_map = {f.get("original_name"): f for f in context.input_files}
-            ordered_files: List[Dict[str, Any]] = []
+            ordered_files: list[dict[str, Any]] = []
 
             for item in file_order:
                 if item in input_files_map:

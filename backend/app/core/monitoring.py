@@ -1,6 +1,6 @@
 import re
-from typing import Dict, Any, Optional
-from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+from typing import Any
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from app.core.config import settings
 from app.core.logging import logger
@@ -31,7 +31,7 @@ SENSITIVE_QUERY_PARAMS = {
 }
 
 
-def sanitize_url(raw_url: Optional[str]) -> Optional[str]:
+def sanitize_url(raw_url: str | None) -> str | None:
     """Strips sensitive query parameters from URLs (e.g., presigned S3 URLs, auth tokens)."""
     if not raw_url:
         return raw_url
@@ -57,14 +57,14 @@ def sanitize_data_dict(data: Any, depth: int = 0) -> Any:
     if depth > 8:
         return "[MAX_DEPTH_EXCEEDED]"
     if isinstance(data, dict):
-        sanitized: Dict[str, Any] = {}
+        sanitized: dict[str, Any] = {}
         for key, value in data.items():
             key_str = str(key)
             if SENSITIVE_KEY_PATTERNS.search(key_str):
                 sanitized[key_str] = "[FILTERED]"
-            elif isinstance(value, (bytes, bytearray)):
+            elif isinstance(value, bytes | bytearray):
                 sanitized[key_str] = f"[FILTERED_BINARY_{len(value)}_BYTES]"
-            elif isinstance(value, (dict, list)):
+            elif isinstance(value, dict | list):
                 sanitized[key_str] = sanitize_data_dict(value, depth + 1)
             elif isinstance(value, str) and ("http://" in value or "https://" in value):
                 sanitized[key_str] = sanitize_url(value)
@@ -75,12 +75,12 @@ def sanitize_data_dict(data: Any, depth: int = 0) -> Any:
         return [sanitize_data_dict(item, depth + 1) for item in data]
     if isinstance(data, str) and ("http://" in data or "https://" in data):
         return sanitize_url(data)
-    if isinstance(data, (bytes, bytearray)):
+    if isinstance(data, bytes | bytearray):
         return f"[FILTERED_BINARY_{len(data)}_BYTES]"
     return data
 
 
-def sentry_before_send(event: Dict[str, Any], hint: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def sentry_before_send(event: dict[str, Any], hint: dict[str, Any]) -> dict[str, Any] | None:
     """
     Sentry before_send callback.
     Guarantees secrets, passwords, tokens, PDF contents, and binary blobs are scrubbed.
@@ -124,7 +124,7 @@ def sentry_before_send(event: Dict[str, Any], hint: Dict[str, Any]) -> Optional[
         return event
 
 
-def sentry_before_breadcrumb(crumb: Dict[str, Any], hint: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def sentry_before_breadcrumb(crumb: dict[str, Any], hint: dict[str, Any]) -> dict[str, Any] | None:
     """Scrub breadcrumb URLs and metadata before collection."""
     try:
         if "data" in crumb and isinstance(crumb["data"], dict):
@@ -144,8 +144,8 @@ def init_monitoring() -> None:
 
     try:
         import sentry_sdk
-        from sentry_sdk.integrations.fastapi import FastApiIntegration
         from sentry_sdk.integrations.celery import CeleryIntegration
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
         from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 
         sentry_sdk.init(

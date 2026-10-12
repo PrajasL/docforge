@@ -1,21 +1,20 @@
 import asyncio
 import io
-import os
 import time
 import uuid
-import pytest
-import pypdf
-import pikepdf
-from httpx import AsyncClient, ASGITransport
 
-from app.core.config import settings
-from app.core.storage import S3StorageBackend, set_storage_backend, get_storage
+import pikepdf
+import pypdf
+import pytest
+from httpx import ASGITransport, AsyncClient
+
 import app.core.database as db_core
-from app.jobs.models import Job, JobStatus
+from app.core.storage import S3StorageBackend, get_storage, set_storage_backend
+from app.jobs.models import JobStatus
 from app.jobs.service import JobService
-from app.workers.tasks import process_job_task
 from app.main import app
-from tests.test_celery_redis_integration import is_redis_available, is_minio_available
+from app.workers.tasks import process_job_task
+from tests.test_celery_redis_integration import is_minio_available, is_redis_available
 
 
 def create_damaged_startxref_pdf(num_pages: int = 2) -> bytes:

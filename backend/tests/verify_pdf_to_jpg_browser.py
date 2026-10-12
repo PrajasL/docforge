@@ -1,11 +1,12 @@
 import io
 import os
-import sys
 import time
 import zipfile
+
 import pypdf
 from PIL import Image
 from playwright.sync_api import sync_playwright
+
 
 def run_browser_verification():
     scratch_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch")

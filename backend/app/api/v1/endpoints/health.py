@@ -1,21 +1,22 @@
 import asyncio
-from datetime import datetime, timezone
-from typing import Any, Dict
+from datetime import UTC, datetime
+from typing import Any
+
 from fastapi import APIRouter, Request, status
 from fastapi.responses import JSONResponse
 
 from app.core.config import settings
 from app.core.database import check_database_health
-from app.core.redis import check_redis_health
-from app.core.storage import check_storage_health
-from app.core.scanner import check_scanner_health
-from app.core.logging import logger
 from app.core.errors import get_request_id
+from app.core.logging import logger
+from app.core.redis import check_redis_health
+from app.core.scanner import check_scanner_health
+from app.core.storage import check_storage_health
 
 router = APIRouter(tags=["health"])
 
 
-async def check_celery_workers_health() -> Dict[str, Any]:
+async def check_celery_workers_health() -> dict[str, Any]:
     """Pings Celery workers via Redis broker with a strict timeout."""
     try:
         def _ping() -> Any:
@@ -52,7 +53,7 @@ async def check_celery_workers_health() -> Dict[str, Any]:
 
 @router.get("/health", summary="Basic liveness probe")
 @router.get("/health/live", summary="Explicit liveness probe")
-async def health_check(request: Request) -> Dict[str, Any]:
+async def health_check(request: Request) -> dict[str, Any]:
     """
     Returns basic application process liveness status.
     This check does not ping downstream dependencies and is intended for
@@ -69,7 +70,7 @@ async def health_check(request: Request) -> Dict[str, Any]:
         },
         "meta": {
             "request_id": request_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
 
@@ -159,7 +160,7 @@ async def readiness_check(request: Request) -> JSONResponse:
             },
             "meta": {
                 "request_id": request_id,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
             },
         },
     )

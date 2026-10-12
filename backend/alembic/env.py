@@ -6,10 +6,8 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
 from app.core.config import settings
 from app.core.database import Base
-from app.jobs.models import Job  # Ensure model is registered
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

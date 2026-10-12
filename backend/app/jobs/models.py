@@ -1,27 +1,26 @@
 import enum
 import uuid
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List, Set
+from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import (
     Column,
+    DateTime,
+    Enum,
+    Index,
+    Integer,
+    SmallInteger,
     String,
     Text,
-    SmallInteger,
-    Integer,
-    DateTime,
-    Index,
-    Enum,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import validates
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 from app.core.database import Base
 from app.core.errors import AppException
 
 
-class JobStatus(str, enum.Enum):
+class JobStatus(enum.StrEnum):
     PENDING = "PENDING"
     UPLOADING = "UPLOADING"
     QUEUED = "QUEUED"
@@ -42,7 +41,7 @@ class InvalidJobTransitionError(AppException):
 
 
 # Valid transition state machine
-VALID_TRANSITIONS: Dict[JobStatus, Set[JobStatus]] = {
+VALID_TRANSITIONS: dict[JobStatus, set[JobStatus]] = {
     JobStatus.PENDING: {
         JobStatus.UPLOADING,
         JobStatus.QUEUED,
@@ -141,16 +140,16 @@ class Job(Base):
     def transition_to(
         self,
         target_status: JobStatus,
-        error_message: Optional[str] = None,
-        error_code: Optional[str] = None,
-        error_details: Optional[Dict[str, Any]] = None,
+        error_message: str | None = None,
+        error_code: str | None = None,
+        error_details: dict[str, Any] | None = None,
     ) -> None:
         """Enforces the job state machine transitions and updates timestamps."""
         allowed = VALID_TRANSITIONS.get(self.status, set())
         if target_status not in allowed:
             raise InvalidJobTransitionError(self.status, target_status)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         old_status = self.status
         self.status = target_status
 
@@ -173,24 +172,24 @@ class Job(Base):
         """Returns True if the job has passed its expiration time or is in EXPIRED state."""
         if self.status == JobStatus.EXPIRED:
             return True
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if self.expires_at and self.expires_at <= now:
             return True
         return False
 
-    def add_input_file(self, file_meta: Dict[str, Any]) -> None:
+    def add_input_file(self, file_meta: dict[str, Any]) -> None:
         """Appends a new file entry to the input_files list."""
         current = list(self.input_files or [])
         current.append(file_meta)
         self.input_files = current
 
-    def get_input_file(self, file_id: str) -> Optional[Dict[str, Any]]:
+    def get_input_file(self, file_id: str) -> dict[str, Any] | None:
         for f in self.input_files or []:
             if f.get("id") == file_id:
                 return f
         return None
 
-    def update_input_file(self, file_id: str, updates: Dict[str, Any]) -> bool:
+    def update_input_file(self, file_id: str, updates: dict[str, Any]) -> bool:
         current = list(self.input_files or [])
         found = False
         for i, f in enumerate(current):

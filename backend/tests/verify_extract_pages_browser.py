@@ -1,7 +1,8 @@
 import os
-import sys
+
 import pypdf
 from playwright.sync_api import sync_playwright
+
 
 def run_browser_verification():
     scratch_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch")
@@ -10,7 +11,7 @@ def run_browser_verification():
     os.makedirs(fixtures_dir, exist_ok=True)
 
     txt_path = os.path.join(fixtures_dir, "not_a_pdf.txt")
-    corrupt_path = os.path.join(fixtures_dir, "corrupt.pdf")
+    os.path.join(fixtures_dir, "corrupt.pdf")
     encrypted_path = os.path.join(fixtures_dir, "sample_encrypted.pdf")
     pdf5_path = os.path.join(scratch_dir, "browser_sample_5page.pdf")
 

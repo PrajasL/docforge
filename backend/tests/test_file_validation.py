@@ -1,11 +1,12 @@
 import pytest
+
 from app.files.validator import (
-    sanitize_filename,
-    validate_file_extension,
-    validate_content_type,
-    validate_pdf_magic_bytes,
-    validate_pdf_file,
     FileValidationError,
+    sanitize_filename,
+    validate_content_type,
+    validate_file_extension,
+    validate_pdf_file,
+    validate_pdf_magic_bytes,
 )
 
 

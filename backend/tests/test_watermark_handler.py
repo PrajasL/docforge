@@ -1,10 +1,12 @@
-import os
 import io
-import pytest
+import os
+
 import pypdf
+import pytest
+
 from app.core.errors import AppException
-from app.tools.watermark import WatermarkPDFHandler
 from app.tools.base import ProcessingContext
+from app.tools.watermark import WatermarkPDFHandler
 
 
 def create_dummy_pdf(num_pages: int = 3, width: float = 400, height: float = 600) -> bytes:

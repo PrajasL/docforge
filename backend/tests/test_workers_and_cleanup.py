@@ -1,15 +1,14 @@
-from datetime import datetime, timezone, timedelta
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
 from app.core.storage import get_storage
-from app.jobs.schemas import JobCreateRequest, FileInputRequest
-from app.jobs.models import Job, JobStatus
+from app.jobs.models import JobStatus
+from app.jobs.schemas import FileInputRequest, JobCreateRequest
 from app.jobs.service import JobService
-from app.workers.tasks import _async_test_job_pipeline, _async_cleanup_expired_jobs
-
+from app.workers.tasks import _async_cleanup_expired_jobs, _async_test_job_pipeline
 
 VALID_PDF_BYTES = b"%PDF-1.4\n1 0 obj\n<< /Type /Catalog >>\nendobj\ntrailer\n<<>>\n%%EOF\n"
 
@@ -136,7 +135,7 @@ async def test_job_cleanup_and_expiration(async_client: AsyncClient, db_session:
     assert await storage.exists(output_key) is True
 
     # 2. Age the job to simulate TTL expiration
-    job.expires_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+    job.expires_at = datetime.now(UTC) - timedelta(minutes=10)
     await db_session.commit()
 
     # 3. Run cleanup task

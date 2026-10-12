@@ -1,12 +1,25 @@
 import asyncio
+import socket
+
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from starlette.requests import Request
 
 from app.core.config import settings
-from app.core.rate_limit import resolve_client_ip, rate_limiter
+from app.core.rate_limit import rate_limiter, resolve_client_ip
 from app.core.redis import get_redis_client
 from app.main import app
+
+
+def is_redis_available() -> bool:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.5)
+        result = s.connect_ex(("localhost", 6379))
+        s.close()
+        return result == 0
+    except Exception:
+        return False
 
 
 def create_dummy_request(client_host: str, headers: dict) -> Request:
@@ -39,6 +52,7 @@ def test_resolve_client_ip_trusted_proxy_multi_hop():
     assert resolved == "192.168.1.100" or resolved == "198.51.100.1"
 
 
+@pytest.mark.skipif(not is_redis_available(), reason="Redis is not reachable at localhost:6379")
 @pytest.mark.asyncio
 async def test_rate_limiter_atomic_sliding_window():
     redis_client = await get_redis_client()
@@ -64,6 +78,7 @@ async def test_rate_limiter_atomic_sliding_window():
     await redis_client.delete(test_key)
 
 
+@pytest.mark.skipif(not is_redis_available(), reason="Redis is not reachable at localhost:6379")
 @pytest.mark.asyncio
 async def test_rate_limiter_concurrency():
     redis_client = await get_redis_client()
@@ -86,6 +101,7 @@ async def test_rate_limiter_concurrency():
     await redis_client.delete(test_key)
 
 
+@pytest.mark.skipif(not is_redis_available(), reason="Redis is not reachable at localhost:6379")
 @pytest.mark.asyncio
 async def test_rate_limit_middleware_job_creation_limit():
     transport = ASGITransport(app=app)

@@ -2,12 +2,13 @@ import io
 import os
 import tempfile
 import zipfile
-import pytest
+
 import pypdf
+import pytest
 
 from app.core.errors import AppException
 from app.tools.base import ProcessingContext
-from app.tools.split import SplitPDFHandler, parse_page_ranges
+from app.tools.split import SplitPDFHandler
 
 
 def create_test_pdf(page_count: int = 1, start_width: float = 100, password: str = None) -> bytes:

@@ -10,6 +10,29 @@ jobs:
   backend-test:
     name: Backend Lint & Test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: docforge
+          POSTGRES_PASSWORD: docforge_dev
+          POSTGRES_DB: docforge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: ./backend
@@ -26,6 +49,8 @@ jobs:
           pip install -r requirements-dev.txt
       - name: Lint with ruff
         run: ruff check .
+      - name: Run database migrations
+        run: alembic upgrade head
       - name: Run pytest
         run: pytest -v
 

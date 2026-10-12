@@ -1,13 +1,14 @@
 import io
 import os
+
+import pypdf
 import pytest
 from PIL import Image
-import pypdf
 
 from app.core.config import settings
 from app.core.errors import AppException
-from app.tools.jpg_to_pdf import JpgToPdfPDFHandler
 from app.tools.base import ProcessingContext
+from app.tools.jpg_to_pdf import JpgToPdfPDFHandler
 
 
 def create_test_jpeg(width: int = 300, height: int = 200, color: tuple = (255, 100, 50)) -> bytes:

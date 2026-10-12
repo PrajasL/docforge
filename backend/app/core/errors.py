@@ -1,5 +1,6 @@
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
+
 from fastapi import Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
@@ -11,20 +12,20 @@ from app.core.logging import logger
 class ResponseMeta(BaseModel):
     request_id: str
     timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
+        default_factory=lambda: datetime.now(UTC).isoformat()
     )
 
 
 class ErrorDetail(BaseModel):
     code: str
     message: str
-    details: Optional[List[Dict[str, Any]]] = None
+    details: list[dict[str, Any]] | None = None
 
 
 class StandardResponse(BaseModel):
     success: bool
-    data: Optional[Any] = None
-    error: Optional[ErrorDetail] = None
+    data: Any | None = None
+    error: ErrorDetail | None = None
     meta: ResponseMeta
 
 
@@ -36,7 +37,7 @@ class AppException(Exception):
         code: str,
         message: str,
         status_code: int = status.HTTP_400_BAD_REQUEST,
-        details: Optional[List[Dict[str, Any]]] = None,
+        details: list[dict[str, Any]] | None = None,
     ):
         super().__init__(message)
         self.code = code
@@ -77,7 +78,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
         },
         "meta": {
             "request_id": request_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
     return JSONResponse(status_code=exc.status_code, content=payload)
@@ -102,7 +103,7 @@ async def validation_exception_handler(
         },
         "meta": {
             "request_id": request_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
     return JSONResponse(
@@ -122,7 +123,7 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
         },
         "meta": {
             "request_id": request_id,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         },
     }
     return JSONResponse(

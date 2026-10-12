@@ -2,16 +2,17 @@ import hashlib
 import io
 import os
 import zipfile
-from typing import Dict, Any, List
-from PIL import Image
-import pypdfium2 as pdfium
-from pypdfium2._helpers.misc import PdfiumError
+from typing import Any
+
 import pypdf
+import pypdfium2 as pdfium
+from PIL import Image
 from pypdf.errors import PdfReadError, PyPdfError
+from pypdfium2._helpers.misc import PdfiumError
 
 from app.core.config import settings
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
 class PdfToJpgPDFHandler(ToolHandler):
@@ -26,7 +27,7 @@ class PdfToJpgPDFHandler(ToolHandler):
     max_input_files = 1
     accepted_content_types = ["application/pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """
         Validates configuration options for PDF to JPG conversion.
         Supported options:
@@ -57,7 +58,7 @@ class PdfToJpgPDFHandler(ToolHandler):
                 message="Image quality must be an integer between 1 and 100.",
             )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """
         Converts the input PDF pages into individual JPG images and saves them in a ZIP archive.
         Enforces configurable upload size, page count, and render dimension limits,

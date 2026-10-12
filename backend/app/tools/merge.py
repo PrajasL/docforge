@@ -1,11 +1,12 @@
 import hashlib
 import os
-from typing import Dict, Any, List
+from typing import Any
+
 import pypdf
 from pypdf.errors import PdfReadError, PdfStreamError, PyPdfError
 
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
 class MergePDFHandler(ToolHandler):
@@ -20,7 +21,7 @@ class MergePDFHandler(ToolHandler):
     max_input_files = 20
     accepted_content_types = ["application/pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates optional merge configurations such as custom file ordering."""
         if not config:
             return
@@ -40,7 +41,7 @@ class MergePDFHandler(ToolHandler):
                     message="All elements in 'file_order' must be string file IDs.",
                 )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """
         Processes and merges input PDF files in the specified order.
         """
@@ -61,7 +62,7 @@ class MergePDFHandler(ToolHandler):
 
         # 2. Determine file order
         input_files_map = {f["id"]: f for f in context.input_files}
-        ordered_files: List[Dict[str, Any]] = []
+        ordered_files: list[dict[str, Any]] = []
 
         file_order = context.config.get("file_order")
         if file_order:

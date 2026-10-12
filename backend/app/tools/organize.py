@@ -1,17 +1,18 @@
 import hashlib
 import os
-from typing import Dict, Any, List, Union
+from typing import Any
+
 import pypdf
 from pypdf.errors import PdfReadError, PdfStreamError, PyPdfError
 
 from app.core.errors import AppException
-from app.tools.base import ToolHandler, ProcessingContext
+from app.tools.base import ProcessingContext, ToolHandler
 
 
 def normalize_organize_pages(
-    pages_spec: Union[List[Union[Dict[str, Any], int, str]], str],
+    pages_spec: list[dict[str, Any] | int | str] | str,
     total_pages: int,
-) -> List[Dict[str, int]]:
+) -> list[dict[str, int]]:
     """
     Normalizes page organization specification into a list of dicts:
     [{"page_number": int, "rotation": int}, ...]
@@ -28,7 +29,7 @@ def normalize_organize_pages(
             message="Please specify at least one page to include in the organized PDF.",
         )
 
-    items: List[Any] = []
+    items: list[Any] = []
     if isinstance(pages_spec, str):
         parts = [p.strip() for p in pages_spec.split(",") if p.strip()]
         for p in parts:
@@ -55,7 +56,7 @@ def normalize_organize_pages(
             message="Please specify at least one page to include in the organized PDF.",
         )
 
-    normalized: List[Dict[str, int]] = []
+    normalized: list[dict[str, int]] = []
     for idx, item in enumerate(items):
         page_num: int
         rotation: int = 0
@@ -148,7 +149,7 @@ class OrganizePDFHandler(ToolHandler):
     max_input_files = 1
     accepted_content_types = ["application/pdf"]
 
-    def validate_config(self, config: Dict[str, Any]) -> None:
+    def validate_config(self, config: dict[str, Any]) -> None:
         """Validates organize configuration before worker processing."""
         if not config:
             raise AppException(
@@ -165,7 +166,7 @@ class OrganizePDFHandler(ToolHandler):
                 message="Please specify pages to include in the organized PDF.",
             )
 
-    async def process(self, context: ProcessingContext) -> Dict[str, Any]:
+    async def process(self, context: ProcessingContext) -> dict[str, Any]:
         """Executes the organize PDF pipeline."""
         # 1. Validate input file
         if len(context.input_files) != 1:
