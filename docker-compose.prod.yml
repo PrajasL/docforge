@@ -281,7 +281,7 @@ services:
       - "9000"
     environment:
       MINIO_ROOT_USER: ${STORAGE_ACCESS_KEY:-docforge_storage_admin}
-      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:-docforge_storage_secret_12345}
+      MINIO_ROOT_PASSWORD: ${STORAGE_SECRET_KEY:?Storage secret required}
     volumes:
       - storage_prod_data:/data
     networks:

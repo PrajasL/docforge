@@ -131,21 +131,26 @@ class S3StorageBackend:
                 return override_base + url[len(endpoint_base):]
         return url
 
-    def _get_client_context(self):
+    def _get_client_context(self, endpoint_url: str | None = None):
         s3_config = Config(
             signature_version="s3v4",
             s3={"addressing_style": "path"},
             retries={"max_attempts": 3, "mode": "standard"},
         )
+        resolved_endpoint = endpoint_url or self.endpoint_url
         return self.session.client(
             "s3",
-            endpoint_url=self.endpoint_url if self.endpoint_url else None,
+            endpoint_url=resolved_endpoint if resolved_endpoint else None,
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
             region_name=self.region_name,
             use_ssl=self.use_ssl,
             config=s3_config,
         )
+
+    def _get_presigned_client_context(self):
+        target_endpoint = self.presigned_endpoint_override or self.endpoint_url
+        return self._get_client_context(endpoint_url=target_endpoint)
 
     async def upload(
         self,
@@ -192,7 +197,7 @@ class S3StorageBackend:
     ) -> str:
         target_bucket = bucket or self.inputs_bucket
         try:
-            async with self._get_client_context() as s3:
+            async with self._get_presigned_client_context() as s3:
                 url = await s3.generate_presigned_url(
                     ClientMethod="put_object",
                     Params={
@@ -224,7 +229,7 @@ class S3StorageBackend:
             params["ResponseContentDisposition"] = f'attachment; filename="{safe_name}"'
 
         try:
-            async with self._get_client_context() as s3:
+            async with self._get_presigned_client_context() as s3:
                 url = await s3.generate_presigned_url(
                     ClientMethod="get_object",
                     Params=params,
