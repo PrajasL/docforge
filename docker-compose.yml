@@ -90,6 +90,7 @@ services:
       - POSTGRES_SERVER=postgres
       - REDIS_URL=redis://redis:6379/0
       - STORAGE_ENDPOINT=http://minio:9000
+      - STORAGE_PRESIGNED_ENDPOINT_OVERRIDE=${STORAGE_PRESIGNED_ENDPOINT_OVERRIDE:-http://localhost:9000}
     volumes:
       - ./backend:/app
     depends_on:
